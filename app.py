@@ -1,0 +1,202 @@
+import os
+from flask import Flask, request, jsonify, render_template, session
+import google.generativeai as genai
+import requests
+import json
+from concurrent.futures import ThreadPoolExecutor
+import threading
+import uuid
+from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-for-sessions')
+
+# API Keys from environment variables
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+GROK_API_KEY = os.getenv('GROK_API_KEY')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+# Validate that all required API keys are present - but only fail at runtime, not import time
+def validate_api_keys():
+    if not OPENAI_API_KEY:
+        raise ValueError("Missing required environment variable: OPENAI_API_KEY")
+
+# Fapulous AI prompts for guided meditation after masturbation
+FAPULOUS_PROMPTS = {
+    "SYSTEM_PROMPT": """You are Fapulous-AI, a warm, evidence-based coach focused on men's post-orgasm recovery. Your tone is supportive, concise, and lightly humorous when appropriate. Everything you say must be grounded in well-established findings from neuroscience or mindfulness research (e.g. dopamine dip, prolactin rise, parasympathetic rebound, self-compassion studies). Cite the science in plain words once, **without academic jargon or hyperlinks**. Never moralise or shame; assume masturbation is normal. Each piece of your response must be shorter than 20 words""",
+    
+    "QUESTION_1_PROMPT": """Acknowledge the user's mood in 1–2 lines. Normalize it using neuroscience. Avoid trying to "solve" anything yet — just validate and inform.
+
+Keep it under 20 words.""",
+    
+    "QUESTION_2_PROMPT": """Respond with 1 short, confident line that tells the user you're collecting the best technique for that issue. Mention that the next session should make them feel x% better soon — make it light, not clinical.
+
+Do not use breathwork, science, or affirmation yet.
+Keep it under 20 words.""",
+    
+    "QUESTION_3_PROMPT": """Acknowledge the user's feeling with warmth and understanding. Tell them you have an affirmation card just for them. Be empathetic and encouraging.
+
+Keep it under 20 words.""",
+    
+    "FINAL_CARD_PROMPT": """Based on user's goal from last response give a calm affirmation that starts with "I..." and stays under 20 words."""
+}
+
+# Configure clients
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/api/prompts', methods=['GET'])
+def get_prompts():
+    return jsonify({
+        "fapulous_prompts": FAPULOUS_PROMPTS
+    })
+
+@app.route('/api/update-prompt', methods=['POST'])
+def update_prompt():
+    """Update a specific prompt"""
+    data = request.get_json()
+    prompt_key = data.get('prompt_key')
+    new_prompt = data.get('new_prompt')
+    
+    if prompt_key in FAPULOUS_PROMPTS:
+        FAPULOUS_PROMPTS[prompt_key] = new_prompt
+        return jsonify({"success": True, "message": f"Updated {prompt_key}"})
+    else:
+        return jsonify({"success": False, "error": "Invalid prompt key"}), 400
+
+@app.route('/api/fapulous-session', methods=['POST'])
+def fapulous_session():
+    """Handle the Fapulous guided meditation session"""
+    # Validate API keys are present
+    try:
+        validate_api_keys()
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 500
+    
+    data = request.get_json()
+    step = data.get('step')  # 'start', 'question1', 'question2', 'reveal', 'final'
+    user_message = data.get('user_message', '')
+    session_data = data.get('session_data', {})
+    
+    if step == 'start':
+        # Initial response when user clicks "I just fapped"
+        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_1_PROMPT"]
+        user_content = "The user just masturbated and wants guidance."
+    elif step == 'question1':
+        # Second response after user's first reply
+        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_2_PROMPT"]
+        user_content = f"User's first response: {user_message}"
+    elif step == 'question2':
+        # Third response - acknowledge feelings and mention affirmation card
+        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_3_PROMPT"]
+        user_content = f"User's second response: {user_message}"
+        
+        # Also generate the affirmation for later use
+        affirmation_prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["FINAL_CARD_PROMPT"]
+        affirmation_content = f"User's goal/responses: {user_message}"
+    else:
+        return jsonify({"error": "Invalid step"}), 400
+    
+    def call_openai_chat(system_prompt, user_content):
+        try:
+            headers = {
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_content}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 100
+            }
+            
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                assistant_message = data["choices"][0]["message"]["content"]
+                return {
+                    "success": True,
+                    "response": assistant_message.strip(),
+                    "error": None
+                }
+            else:
+                return {
+                    "success": False,
+                    "response": None,
+                    "error": f"HTTP {response.status_code}: {response.text}"
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "response": None,
+                "error": str(e)
+            }
+    
+    # Get AI response
+    result = call_openai_chat(prompt, user_content)
+    
+    if result["success"]:
+        response_data = {
+            "ai_response": result["response"],
+            "step": step,
+            "next_step": get_next_step(step),
+            "session_data": session_data
+        }
+        
+        # For question2, also generate the affirmation and store it
+        if step == 'question2':
+            affirmation_result = call_openai_chat(affirmation_prompt, affirmation_content)
+            if affirmation_result["success"]:
+                if 'stored_affirmation' not in session_data:
+                    session_data['stored_affirmation'] = affirmation_result["response"]
+                response_data["session_data"] = session_data
+        
+        # Add user message to session data for context
+        if user_message:
+            if 'conversation' not in session_data:
+                session_data['conversation'] = []
+            session_data['conversation'].append({
+                "user": user_message,
+                "ai": result["response"],
+                "step": step
+            })
+            response_data["session_data"] = session_data
+        
+        return jsonify(response_data)
+    else:
+        return jsonify({"error": result["error"]}), 500
+
+def get_next_step(current_step):
+    """Get the next step in the conversation flow"""
+    flow = {
+        'start': 'question1',
+        'question1': 'question2', 
+        'question2': 'reveal',
+        'final': 'complete'
+    }
+    return flow.get(current_step, 'complete')
+
+# For Vercel deployment - this needs to be accessible
+application = app
+
+if __name__ == '__main__':
+    app.run(debug=True, host='localhost', port=3002) 
