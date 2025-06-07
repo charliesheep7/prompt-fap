@@ -139,6 +139,17 @@
             margin-left: auto;
             text-align: right;
         }
+
+        .message.ai.typing::after {
+            content: '|';
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
         
         .message-input {
             display: flex;
@@ -587,9 +598,44 @@
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
-            messageDiv.textContent = content;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            
+            if (isUser) {
+                // User messages appear instantly
+                messageDiv.textContent = content;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            } else {
+                // AI messages use typewriter effect
+                messageDiv.textContent = '';
+                chatContainer.appendChild(messageDiv);
+                typewriterEffect(messageDiv, content);
+            }
+        }
+
+        function typewriterEffect(element, text, speed = 30) {
+            let i = 0;
+            element.textContent = '';
+            element.classList.add('typing');
+            
+            function typeChar() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    
+                    // Auto-scroll as text appears
+                    const chatContainer = document.getElementById('chatContainer');
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    
+                    // Vary the speed slightly for more natural feel
+                    const randomDelay = speed + Math.random() * 20 - 10;
+                    setTimeout(typeChar, randomDelay);
+                } else {
+                    // Remove typing cursor when done
+                    element.classList.remove('typing');
+                }
+            }
+            
+            typeChar();
         }
 
         function showLoading() {
