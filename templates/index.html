@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vamo Business Analysis Tool</title>
+    <title>Fapulous - Post-Fap Guided Recovery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,29 +15,20 @@
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #45A1CF 0%, #BBD9F1 100%);
             min-height: 100vh;
-            height: auto;
             padding: 20px;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-        
-        html {
-            height: auto;
-            overflow-y: auto;
+            color: #031340;
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 800px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            height: auto;
-            min-height: auto;
         }
         
         .header {
@@ -43,61 +37,246 @@
         }
         
         .header h1 {
-            color: #333;
+            color: #031340;
             margin-bottom: 10px;
             font-size: 2.5rem;
             font-weight: 700;
         }
         
         .header p {
-            color: #666;
+            color: #6B8CA3;
             font-size: 1.1rem;
+            font-style: italic;
         }
 
         .fancy-tagline {
-            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c, #4facfe, #00f2fe);
+            background: linear-gradient(45deg, #45A1CF, #5BA3D6, #BBD9F1, #C9C2C5);
             background-size: 400% 400%;
-            background-position: 0% 50%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-weight: 600;
-            text-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
-            filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.2));
-            position: relative;
         }
 
-        .fancy-tagline::before {
+        /* Main App States */
+        .app-state {
+            display: none;
+        }
+        
+        .app-state.active {
+            display: block;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        .main-button {
+            background: linear-gradient(135deg, #45A1CF 0%, #5BA3D6 100%);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+            min-width: 200px;
+        }
+        
+        .main-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(69, 161, 207, 0.3);
+        }
+        
+        .secondary-button {
+            background: transparent;
+            color: #45A1CF;
+            border: 2px solid #45A1CF;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .secondary-button:hover {
+            background: #45A1CF;
+            color: white;
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #F8FAFC;
+            border-radius: 15px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.4;
+        }
+        
+        .message.ai {
+            background: linear-gradient(135deg, #45A1CF 0%, #5BA3D6 100%);
+            color: white;
+            margin-right: auto;
+        }
+        
+        .message.user {
+            background: #E2E8F0;
+            color: #031340;
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .message-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .message-input input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #CBD5E1;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .message-input input:focus {
+            border-color: #45A1CF;
+        }
+        
+        .send-button {
+            background: #45A1CF;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            }
+
+                /* Affirmation Card */
+        .affirmation-card {
+            background: linear-gradient(135deg, #45A1CF 0%, #5BA3D6 50%, #BBD9F1 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 24px;
+            text-align: center;
+            margin: 30px 0;
+            box-shadow: 
+                0 20px 40px rgba(69, 161, 207, 0.2),
+                0 10px 20px rgba(69, 161, 207, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .affirmation-card::before {
             content: '';
             position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c, #4facfe, #00f2fe);
-            background-size: 400% 400%;
-            background-position: 0% 50%;
-            border-radius: 8px;
-            z-index: -1;
-            opacity: 0.3;
-            filter: blur(8px);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .affirmation-card h3 {
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .affirmation-text {
+            font-size: 1.4rem;
+            font-weight: 400;
+            line-height: 1.6;
+            font-style: italic;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        
+        .affirmation-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .action-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .action-button svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .affirmation-quote {
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            font-size: 40px;
+            opacity: 0.1;
+            z-index: 0;
+        }
+        
+        .affirmation-quote:last-child {
+            top: auto;
+            bottom: 15px;
+            left: auto;
+            right: 20px;
+            transform: rotate(180deg);
         }
 
-        @keyframes gradientShift {
-            0%, 100% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-        }
-
-        .prompt-section {
-            margin-bottom: 30px;
-            background: #f8f9fa;
+        /* Prompt Management */
+        .prompt-manager {
+            background: #F8FAFC;
             padding: 20px;
             border-radius: 15px;
-            border: 2px solid #e1e5e9;
+            margin-bottom: 20px;
         }
 
         .prompt-tabs {
@@ -108,239 +287,67 @@
         }
 
         .prompt-tab {
-            padding: 12px 24px;
+            padding: 8px 16px;
             border: none;
-            background: #e9ecef;
-            color: #495057;
-            border-radius: 10px;
+            background: #E2E8F0;
+            color: #475569;
+            border-radius: 20px;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 14px;
             transition: all 0.3s ease;
         }
 
         .prompt-tab.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #45A1CF;
             color: white;
         }
 
-        .prompt-tab:hover:not(.active) {
-            background: #dee2e6;
+        .prompt-editor {
+            margin-top: 15px;
         }
 
-        .prompt-display {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #e1e5e9;
-            margin-bottom: 15px;
-        }
-
-        .prompt-display strong {
-            color: #667eea;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .prompt-text {
-            color: #333;
-            line-height: 1.5;
-            font-size: 14px;
-            white-space: pre-line;
-        }
-
-        .custom-prompt-container {
-            display: none;
-        }
-
-        .custom-prompt-container.active {
-            display: block;
-        }
-
-        #customPromptTextarea {
+        .prompt-editor textarea {
             width: 100%;
-            min-height: 100px;
+            min-height: 120px;
             padding: 12px;
-            border: 2px solid #e1e5e9;
+            border: 2px solid #CBD5E1;
             border-radius: 8px;
             font-size: 14px;
             resize: vertical;
-            font-family: inherit;
+            font-family: 'Nunito', inherit;
         }
 
-        #customPromptTextarea:focus {
+        .prompt-editor textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #45A1CF;
         }
 
-        .business-analysis-inputs {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 15px;
-            border: 2px solid #e1e5e9;
-            margin-bottom: 20px;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .input-row input {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-
-        .input-row input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        #markdownContent {
-            width: 100%;
-            min-height: 200px;
-            padding: 12px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 14px;
-            resize: vertical;
-            font-family: 'Courier New', monospace;
-        }
-
-        #markdownContent:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .input-section {
-            margin-bottom: 30px;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        
-        #analyzeButton {
-            padding: 15px 40px;
+        .save-prompt-btn {
+            background: #10B981;
+            color: white;
             border: none;
-            border-radius: 12px;
-            font-size: 18px;
-            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 5px;
+            margin-top: 10px;
             cursor: pointer;
-            transition: transform 0.2s ease;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
         }
         
-        #analyzeButton:hover {
-            transform: translateY(-2px);
-        }
-        
-        #analyzeButton:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .conversations-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-        
-        .analysis-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            max-height: 700px;
-            overflow-y: auto;
-        }
-        
-        .model-name {
-            font-weight: 700;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
-            position: sticky;
-            top: 0;
-            background: white;
-            z-index: 1;
-        }
-        
-        .openai { color: #10a37f; }
-        .grok { color: #1da1f2; }
-        .gemini { color: #4285f4; }
-
-        .analysis-result {
-            margin-bottom: 15px;
-        }
-
-        .analysis-field {
-            margin-bottom: 10px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            border-left: 3px solid #667eea;
-        }
-
-        .analysis-field-label {
-            font-weight: 600;
-            color: #667eea;
-            font-size: 12px;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-        }
-
-        .analysis-field-value {
-            color: #333;
-            font-size: 14px;
-        }
-
-        .json-output {
-            background: #f1f3f4;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
+        /* Loading States */
         .loading {
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 100px;
-            color: #666;
+            gap: 10px;
+            color: #6B8CA3;
             font-style: italic;
         }
         
-        .error {
-            color: #e74c3c;
-            background: #fdf2f2;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #e74c3c;
-            margin-bottom: 10px;
-        }
-        
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #CBD5E1;
+            border-top: 2px solid #45A1CF;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
             animation: spin 1s linear infinite;
-            margin-right: 10px;
         }
         
         @keyframes spin {
@@ -348,516 +355,469 @@
             100% { transform: rotate(360deg); }
         }
         
-        .empty-state {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-            padding: 40px;
-        }
-        
-        @media (max-width: 768px) {
-            .conversations-grid {
-                grid-template-columns: 1fr;
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
             }
             
             .header h1 {
                 font-size: 2rem;
             }
 
-            .prompt-tabs {
-                justify-content: center;
+            .main-button {
+                padding: 16px 32px;
+                font-size: 16px;
             }
-
-            .input-row {
-                flex-direction: column;
-            }
-
-            .button-group {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .preset-buttons {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .preset-button {
-                font-size: 14px;
-                padding: 10px 20px;
-            }
-        }
-
-        .preset-examples {
-            margin-bottom: 20px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 15px;
-            border: 2px solid #e1e5e9;
-        }
-
-        .preset-header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-
-        .preset-header strong {
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
-
-        .preset-header span {
-            color: #666;
-            font-size: 1rem;
-        }
-
-        .preset-buttons {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .preset-button {
-            padding: 12px 24px;
-            border: none;
-            background: #e9ecef;
-            color: #495057;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .preset-button:hover {
-            background: #dee2e6;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🍍 Vamo Business Analysis</h1>
-            <p class="fancy-tagline">This is where the billion dollar good vibes gets cooked</p>
+            <h1>💦 Fapulous</h1>
+            <p class="fancy-tagline">Evidence-based post-fap recovery & mindful meditation</p>
         </div>
 
-        <div class="prompt-section">
+        <!-- Welcome Screen -->
+        <div class="app-state active" id="welcomeScreen">
+            <div class="welcome-screen">
+                <h2>How are you feeling?</h2>
+                <p style="margin: 20px 0; color: #6B8CA3;">
+                    Welcome to your personal guided recovery coach. 
+                    Click below when you're ready to start your mindful recovery session.
+                </p>
+                <button class="main-button" onclick="startSession()">
+                    🧘‍♂️ I just fapped
+                </button>
+                <br>
+                <button class="secondary-button" onclick="togglePromptManager()">
+                    ⚙️ Edit AI Prompts
+                </button>
+            </div>
+        </div>
+
+        <!-- Prompt Management -->
+        <div class="app-state" id="promptManager">
+            <div class="prompt-manager">
+                <h3>Edit Fapulous AI Prompts</h3>
+                <p style="margin-bottom: 20px; color: #6B8CA3;">Customize how the AI responds during each step of the recovery session.</p>
+                
             <div class="prompt-tabs">
-                <button class="prompt-tab active" data-version="VAMO_V1">VAMO V1</button>
-                <button class="prompt-tab" data-version="custom">Custom Prompt</button>
+                    <button class="prompt-tab active" data-prompt="SYSTEM_PROMPT">System Prompt</button>
+                    <button class="prompt-tab" data-prompt="QUESTION_1_PROMPT">Question 1</button>
+                    <button class="prompt-tab" data-prompt="QUESTION_2_PROMPT">Question 2</button>
+                    <button class="prompt-tab" data-prompt="QUESTION_3_PROMPT">Question 3</button>
+                    <button class="prompt-tab" data-prompt="FINAL_CARD_PROMPT">Final Card</button>
             </div>
             
-            <div class="prompt-display">
-                <strong>Current Analysis Prompt:</strong>
-                <div class="prompt-text" id="currentPromptText">Loading...</div>
+                <div class="prompt-editor">
+                    <textarea id="promptTextarea" placeholder="Loading prompt..."></textarea>
+                    <br>
+                    <button class="save-prompt-btn" onclick="savePrompt()">Save Changes</button>
             </div>
             
-            <div class="custom-prompt-container" id="customPromptContainer">
-                <textarea id="customPromptTextarea" placeholder="Enter your custom analysis prompt here..."></textarea>
+                <div style="margin-top: 20px;">
+                    <button class="secondary-button" onclick="backToWelcome()">← Back to App</button>
+                </div>
             </div>
         </div>
 
-        <div class="business-analysis-inputs">
-            <div class="input-row">
-                <input type="text" id="companyName" placeholder="Company Name" />
-                <input type="text" id="companyTagline" placeholder="Company Tagline (optional)" />
-            </div>
-            <textarea id="markdownContent" placeholder="Paste company's website markdown content here..."></textarea>
+        <!-- Chat Session -->
+        <div class="app-state" id="chatSession">
+            <div class="chat-container" id="chatContainer">
+                <!-- Messages will be populated here -->
         </div>
 
-        <div class="preset-examples">
-            <div class="preset-header">
-                <strong>🔄 Quick Examples:</strong>
-                <span>Load preset data to test prompts quickly</span>
-            </div>
-            <div class="preset-buttons">
-                <button class="preset-button" data-example="flapico">📝 Flapico (LLM Testing)</button>
-                <button class="preset-button" data-example="zogo">💰 Zogo (FinTech)</button>
-                <button class="preset-button" id="clearFields">🗑️ Clear All</button>
+            <div class="message-input" id="messageInput" style="display: none;">
+                <input type="text" id="userInput" placeholder="Type your response..." onkeypress="handleKeyPress(event)">
+                <button class="send-button" onclick="sendMessage()">Send</button>
+        </div>
+        
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="secondary-button" onclick="resetSession()">🏠 Start Over</button>
             </div>
         </div>
         
-        <div class="input-section">
-            <div class="button-group">
-                <button id="analyzeButton">🚀 Analyze Business</button>
+                <!-- Final Affirmation -->
+        <div class="app-state" id="finalScreen">
+            <div class="affirmation-card" id="affirmationCard">
+                <div class="affirmation-quote">"</div>
+                <h3>Your Personal Affirmation</h3>
+                <div class="affirmation-text" id="affirmationText">
+                    <!-- Affirmation will be populated here -->
+                </div>
+                <div class="affirmation-actions">
+                    <button class="action-button" onclick="shareAffirmation()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        Share
+                    </button>
+                    <button class="action-button" onclick="saveAffirmation()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17,21 17,13 7,13 7,21"></polyline>
+                            <polyline points="7,3 7,8 15,8"></polyline>
+                        </svg>
+                        Save
+                    </button>
+                    <button class="action-button" onclick="copyAffirmation()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Copy
+                    </button>
+                </div>
+                <div class="affirmation-quote">"</div>
             </div>
-        </div>
-        
-        <div id="businessAnalysis" class="conversations-grid">
-            <div class="analysis-card">
-                <div class="model-name openai">OpenAI GPT-4.1</div>
-                <div class="empty-state">Enter company data and click "Analyze Business"...</div>
-            </div>
-            <div class="analysis-card">
-                <div class="model-name openai">OpenAI GPT-4.1-mini</div>
-                <div class="empty-state">Enter company data and click "Analyze Business"...</div>
-            </div>
-            <div class="analysis-card">
-                <div class="model-name grok">Grok-3-mini</div>
-                <div class="empty-state">Enter company data and click "Analyze Business"...</div>
-            </div>
-            <div class="analysis-card">
-                <div class="model-name gemini">Gemini 2.5 Flash Preview</div>
-                <div class="empty-state">Enter company data and click "Analyze Business"...</div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="main-button" onclick="resetSession()">✨ Start New Session</button>
             </div>
         </div>
     </div>
 
     <script>
         // App state
-        let currentPromptVersion = 'VAMO_V1';
-        let customPrompt = '';
-        let businessPrompts = {};
-
-        // DOM elements
-        const analyzeButton = document.getElementById('analyzeButton');
-        const businessAnalysisDiv = document.getElementById('businessAnalysis');
-        const currentPromptText = document.getElementById('currentPromptText');
-        const customPromptContainer = document.getElementById('customPromptContainer');
-        const customPromptTextarea = document.getElementById('customPromptTextarea');
-        const companyName = document.getElementById('companyName');
-        const companyTagline = document.getElementById('companyTagline');
-        const markdownContent = document.getElementById('markdownContent');
+        let currentStep = 'start';
+        let sessionData = {};
+        let currentPromptKey = 'SYSTEM_PROMPT';
+        let fapulousPrompts = {};
         
-        // Preset examples data
-        const presetExamples = {
-            flapico: {
-                name: "Flapico",
-                tagline: "LLM prompt versioning, evaluation & testing tool",
-                content: `# LLMs say sh\\*t, fix it before they talk to your customers
-
-Meet Flapico, the best tool for prompt versioning, evaluation & testing — crafted by LLM engineers
-
-[Get Started](https://app.flapico.com/)
-
-[Request a Demo](https://cal.com/adarshpunj/15min)
-
-![BG Pattern](https://framerusercontent.com/images/d6DuJK4lSNgmOT5fXrqehovDu98.svg)
-
-Prompt. Evaluate. Succeed
-
-Feature
-
-## Prompt playground
-
-Run your prompt against different models, and configuration
-
-Multi-model support
-
-Configuration
-
-Versioning
-
-Feature
-
-## Run tests
-
-Run large tests on your datasets with different combinations of models and prompts
-
-Realtime updates
-
-Fully concurrent
-
-Run mutliple tests in background
-
-Feature
-
-## Analyze & Evaluate
-
-Evaluate your test results using Flapico's Eval Library
-
-Granular details for each LLM call
-
-Detailed metrics & charts`
-            },
-            zogo: {
-                name: "Zogo",
-                tagline: "Level up your financial literacy program",
-                content: `# Zogo: Level up your financial literacy program
-
-Empower your community like never before using Zogo's cutting-edge financial literacy solutions.
-
-**Trusted by 250+ financial institutions**
-Serving in all 50 states!
-
-## Designed for maximum engagement
-
-**Gamified to be engaging and enjoyable**
-- Personalized learning pathways for learners at any point in their financial journey
-- Reward system with milestones
-
-## Microlearning for a busy world
-
-**800+ Concise, bite-sized modules**
-- Short-form lessons
-- Easy-to-digest content with no jargon
-
-## Plug & play
-
-**Personalized look and feel**
-- Customize the education offerings
-- Reflect your unique brand identity with in-depth branding options
-
-## Measurable impact
-
-**Measure impact directly in your community**
-- Robust analytics tracking
-- Export insights and reports to PDF`
-            }
-        };
-        
-        // Load system prompts from backend
-        async function loadSystemPrompts() {
+        // Load prompts from backend
+        async function loadPrompts() {
             try {
                 const response = await fetch('/api/prompts');
                 const data = await response.json();
-                businessPrompts = data.business_analysis_prompts;
-                updatePromptDisplay();
+                fapulousPrompts = data.fapulous_prompts;
+                updatePromptEditor();
             } catch (error) {
                 console.error('Error loading prompts:', error);
-                currentPromptText.textContent = 'Error loading prompts';
             }
         }
-        
-        function updatePromptDisplay() {
-            // Update prompt tabs
-            const tabs = document.querySelectorAll('.prompt-tab');
-            tabs.forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.version === currentPromptVersion);
-            });
-            
-            // Update prompt display
-            if (currentPromptVersion === 'custom') {
-                currentPromptText.textContent = customPrompt || 'Enter your custom prompt below';
-                customPromptContainer.classList.add('active');
-            } else {
-                currentPromptText.textContent = businessPrompts[currentPromptVersion] || 'Loading...';
-                customPromptContainer.classList.remove('active');
+
+        // Prompt management
+        function togglePromptManager() {
+            showScreen('promptManager');
+        }
+
+        function backToWelcome() {
+            showScreen('welcomeScreen');
+        }
+
+        function updatePromptEditor() {
+            const textarea = document.getElementById('promptTextarea');
+            if (textarea && fapulousPrompts[currentPromptKey]) {
+                textarea.value = fapulousPrompts[currentPromptKey];
             }
         }
 
         // Handle prompt tab clicks
+        document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.prompt-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                currentPromptVersion = tab.dataset.version;
-                updatePromptDisplay();
+                    // Update active tab
+                    document.querySelectorAll('.prompt-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // Update current prompt key and editor
+                    currentPromptKey = tab.dataset.prompt;
+                    updatePromptEditor();
+                });
             });
         });
         
-        // Handle custom prompt changes
-        customPromptTextarea.addEventListener('input', () => {
-            customPrompt = customPromptTextarea.value;
-            if (currentPromptVersion === 'custom') {
-                updatePromptDisplay();
-            }
-        });
-
-        function renderAnalysisResults(results) {
-            const cards = businessAnalysisDiv.querySelectorAll('.analysis-card');
-            const models = ['openai_gpt4', 'openai_gpt4_mini', 'grok', 'gemini'];
-            
-            models.forEach((model, index) => {
-                const card = cards[index];
-                const modelName = card.querySelector('.model-name');
-                const result = results[model];
-                
-                let content = modelName.outerHTML;
-                
-                if (result && result.response && !result.error) {
-                    const analysis = result.response;
-                    const details = analysis.details || {};
-                    const valuation = analysis.valuation || {};
-                    const pros = analysis.pros || [];
-                    const concerns = analysis.concerns || [];
-                    const competitors = analysis.competitors || [];
-                    
-                    content += `
-                        <div class="analysis-result">
-                            <div class="analysis-field">
-                                <div class="analysis-field-label">Company Name</div>
-                                <div class="analysis-field-value">${details.name || 'N/A'}</div>
-                            </div>
-                            <div class="analysis-field">
-                                <div class="analysis-field-label">Catchy One-Liner</div>
-                                <div class="analysis-field-value">${details.catchy_one_liner || 'N/A'}</div>
-                            </div>
-                            <div class="analysis-field">
-                                <div class="analysis-field-label">Provocative Question</div>
-                                <div class="analysis-field-value">${details.provocative_question || 'N/A'}</div>
-                            </div>
-                            <div class="analysis-field">
-                                <div class="analysis-field-label">Description</div>
-                                <div class="analysis-field-value">${details.description || 'N/A'}</div>
-                            </div>
-                            <div class="analysis-field">
-                                <div class="analysis-field-label">Valuation</div>
-                                <div class="analysis-field-value">${valuation.estimate || 'N/A'} (Confidence: ${valuation.confidence || 'N/A'})</div>
-                            </div>
-                            <div class="analysis-field">
-                                <div class="analysis-field-label">Business Active</div>
-                                <div class="analysis-field-value">${analysis.isBusinessActive ? 'Yes' : 'No'}</div>
-                            </div>
-                            
-                            ${pros.length > 0 ? `
-                                <div class="analysis-field">
-                                    <div class="analysis-field-label">Pros (${pros.length})</div>
-                                    <div class="analysis-field-value">
-                                        ${pros.map(pro => `<strong>${pro.title}:</strong> ${pro.description}`).join('<br><br>')}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            ${concerns.length > 0 ? `
-                                <div class="analysis-field">
-                                    <div class="analysis-field-label">Concerns (${concerns.length})</div>
-                                    <div class="analysis-field-value">
-                                        ${concerns.map(concern => `<strong>${concern.title}</strong> (Severity: ${concern.severity}/10): ${concern.description}`).join('<br><br>')}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            ${competitors.length > 0 ? `
-                                <div class="analysis-field">
-                                    <div class="analysis-field-label">Competitors (${competitors.length})</div>
-                                    <div class="analysis-field-value">
-                                        ${competitors.map(comp => `<strong>${comp.name}</strong> (Threat: ${comp.threat_level}/10): ${comp.description}`).join('<br><br>')}
-                                    </div>
-                                </div>
-                            ` : ''}
-                            
-                            <details>
-                                <summary>Raw JSON Response</summary>
-                                <div class="json-output">${JSON.stringify(analysis, null, 2)}</div>
-                            </details>
-                        </div>
-                    `;
-                } else if (result && result.error) {
-                    content += `<div class="error">Error: ${result.error}</div>`;
-                    if (result.raw_response) {
-                        content += `
-                            <details>
-                                <summary>Raw Response (for debugging)</summary>
-                                <div class="json-output">${result.raw_response}</div>
-                            </details>
-                        `;
-                    }
-                } else {
-                    content += `<div class="empty-state">No response received</div>`;
-                }
-                
-                card.innerHTML = content;
-            });
-        }
-
-        async function analyzeBusinessData() {
-            const name = companyName.value.trim();
-            const tagline = companyTagline.value.trim();
-            const content = markdownContent.value.trim();
-            
-            if (!content) {
-                alert('Please enter markdown content for the company');
-                return;
-            }
-            
-            analyzeButton.disabled = true;
-            analyzeButton.textContent = '🔄 Analyzing...';
-            
-            // Show loading state
-            const cards = businessAnalysisDiv.querySelectorAll('.analysis-card');
-            cards.forEach(card => {
-                const modelName = card.querySelector('.model-name');
-                card.innerHTML = `
-                    ${modelName.outerHTML}
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Analyzing business data...
-                    </div>
-                `;
-            });
+        async function savePrompt() {
+            const textarea = document.getElementById('promptTextarea');
+            const newPrompt = textarea.value;
             
             try {
-                const requestData = {
-                    company_name: name,
-                    company_tagline: tagline,
-                    markdown_content: content,
-                    prompt_version: currentPromptVersion,
-                    custom_prompt: currentPromptVersion === 'custom' ? customPrompt : ''
-                };
-                
-                // Debug logging
-                console.log('Request data:', requestData);
-                console.log('Current prompt version:', currentPromptVersion);
-                console.log('Custom prompt:', customPrompt);
-                
-                const response = await fetch('/api/analyze-business', {
+                const response = await fetch('/api/update-prompt', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(requestData)
+                    body: JSON.stringify({
+                        prompt_key: currentPromptKey,
+                        new_prompt: newPrompt
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    fapulousPrompts[currentPromptKey] = newPrompt;
+                    alert('Prompt updated successfully!');
+                } else {
+                    alert('Error updating prompt: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error saving prompt:', error);
+                alert('Error saving prompt');
+            }
+        }
+
+        // Session management
+        function showScreen(screenId) {
+            document.querySelectorAll('.app-state').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        async function startSession() {
+            currentStep = 'start';
+            sessionData = {};
+            showScreen('chatSession');
+            
+            // Call AI for initial response
+            await makeAICall('start');
+        }
+
+        function resetSession() {
+            currentStep = 'start';
+            sessionData = {};
+            document.getElementById('chatContainer').innerHTML = '';
+            document.getElementById('messageInput').style.display = 'none';
+            showScreen('welcomeScreen');
+        }
+
+        function addMessage(content, isUser = false) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'ai'}`;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showLoading() {
+            const chatContainer = document.getElementById('chatContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.innerHTML = '<div class="spinner"></div> Fapulous AI is thinking...';
+            loadingDiv.id = 'loadingMessage';
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function hideLoading() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        async function makeAICall(step, userMessage = '') {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/fapulous-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        step: step,
+                        user_message: userMessage,
+                        session_data: sessionData
+                    })
                 });
                 
                 const data = await response.json();
-                console.log('Response data:', data);
-                renderAnalysisResults(data);
+                hideLoading();
+                
+                if (data.ai_response) {
+                    addMessage(data.ai_response, false);
+                    currentStep = data.next_step;
+                    sessionData = data.session_data || sessionData;
+                    
+                    if (currentStep === 'final') {
+                        // Show final affirmation
+                        document.getElementById('affirmationText').textContent = data.ai_response;
+                        setTimeout(() => showScreen('finalScreen'), 1000);
+                    } else if (currentStep === 'reveal') {
+                        // Show reveal button instead of input
+                        showRevealButton();
+                    } else if (currentStep !== 'complete') {
+                        // Show input for next response
+                        document.getElementById('messageInput').style.display = 'flex';
+                        document.getElementById('userInput').focus();
+                    }
+                } else {
+                    addMessage('Sorry, I encountered an error. Please try again.', false);
+                }
                 
             } catch (error) {
+                hideLoading();
                 console.error('Error:', error);
-                alert('Failed to analyze business: ' + error.message);
+                addMessage('Connection error. Please check your internet and try again.', false);
+        }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
             }
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const userMessage = userInput.value.trim();
             
-            analyzeButton.disabled = false;
-            analyzeButton.textContent = '🚀 Analyze Business';
+            if (!userMessage) return;
+        
+            // Add user message to chat
+            addMessage(userMessage, true);
+            userInput.value = '';
+            document.getElementById('messageInput').style.display = 'none';
+            
+            // Call AI with user message
+            await makeAICall(currentStep, userMessage);
+        }
+
+        function showRevealButton() {
+            const chatContainer = document.getElementById('chatContainer');
+            const revealButtonDiv = document.createElement('div');
+            revealButtonDiv.style.cssText = `
+                text-align: center;
+                margin: 20px 0;
+            `;
+            revealButtonDiv.innerHTML = `
+                <button class="main-button" onclick="revealCard()" id="revealButton">
+                    ✨ Reveal My Affirmation Card
+                </button>
+            `;
+            chatContainer.appendChild(revealButtonDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function revealCard() {
+            // Hide the reveal button
+            document.getElementById('revealButton').style.display = 'none';
+            
+            // Get stored affirmation and show final screen directly
+            const storedAffirmation = sessionData.stored_affirmation;
+            if (storedAffirmation) {
+                document.getElementById('affirmationText').textContent = storedAffirmation;
+                setTimeout(() => showScreen('finalScreen'), 500);
+            } else {
+                // Fallback - should not happen
+                addMessage('Error: Could not retrieve your affirmation. Please try again.', false);
+            }
         }
         
-        // Event listeners
-        analyzeButton.addEventListener('click', analyzeBusinessData);
-        
-        // Preset example handlers
-        document.querySelectorAll('.preset-button[data-example]').forEach(button => {
-            button.addEventListener('click', () => {
-                const exampleKey = button.dataset.example;
-                const example = presetExamples[exampleKey];
-                
-                if (example) {
-                    companyName.value = example.name;
-                    companyTagline.value = example.tagline;
-                    markdownContent.value = example.content;
-                    
-                    // Visual feedback
-                    button.style.background = '#667eea';
-                    button.style.color = 'white';
-                    setTimeout(() => {
-                        button.style.background = '#e9ecef';
-                        button.style.color = '#495057';
-                    }, 300);
-                }
-            });
-        });
-        
-        // Clear fields handler
-        document.getElementById('clearFields').addEventListener('click', () => {
-            companyName.value = '';
-            companyTagline.value = '';
-            markdownContent.value = '';
+                // Affirmation card actions
+        async function shareAffirmation() {
+            const affirmationText = document.getElementById('affirmationText').textContent;
             
-            // Visual feedback
-            const clearButton = document.getElementById('clearFields');
-            clearButton.style.background = '#e74c3c';
-            clearButton.style.color = 'white';
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'My Fapulous Affirmation',
+                        text: affirmationText,
+                        url: window.location.href
+                    });
+                } catch (err) {
+                    console.log('Share cancelled or failed');
+                }
+            } else {
+                // Fallback to copy to clipboard
+                await copyToClipboard(affirmationText);
+                showNotification('Affirmation copied to clipboard for sharing!');
+            }
+        }
+
+        function saveAffirmation() {
+            const affirmationText = document.getElementById('affirmationText').textContent;
+            const timestamp = new Date().toLocaleDateString();
+            
+            // Save to localStorage
+            const savedAffirmations = JSON.parse(localStorage.getItem('fapulousAffirmations') || '[]');
+            savedAffirmations.push({
+                text: affirmationText,
+                date: timestamp,
+                id: Date.now()
+            });
+            localStorage.setItem('fapulousAffirmations', JSON.stringify(savedAffirmations));
+            
+            showNotification('Affirmation saved successfully! ✨');
+        }
+
+        async function copyAffirmation() {
+            const affirmationText = document.getElementById('affirmationText').textContent;
+            await copyToClipboard(affirmationText);
+            showNotification('Affirmation copied to clipboard! 📋');
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (err) {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function showNotification(message) {
+            // Create a simple notification
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #10B981;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
             setTimeout(() => {
-                clearButton.style.background = '#e9ecef';
-                clearButton.style.color = '#495057';
-            }, 300);
-        });
-        
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        // Add CSS for notification animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
         // Initialize app
         async function init() {
-            await loadSystemPrompts();
+            await loadPrompts();
         }
-        
+
         // Load everything when page loads
-        init();
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html> 
