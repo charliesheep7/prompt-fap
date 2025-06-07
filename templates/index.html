@@ -178,7 +178,144 @@
             border-radius: 25px;
             cursor: pointer;
             font-weight: 600;
-            }
+        }
+
+        /* Voice Chat Styles */
+        .voice-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .voice-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 24px;
+        }
+
+        .voice-button.record {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            color: white;
+        }
+
+        .voice-button.record:hover {
+            background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+            transform: scale(1.05);
+        }
+
+        .voice-button.record.recording {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+            animation: pulse 1.5s ease-in-out infinite alternate;
+        }
+
+        .voice-button.stop {
+            background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+            color: white;
+        }
+
+        .voice-button.play {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            to { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+
+        .voice-indicator {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #6B8CA3;
+            min-height: 20px;
+        }
+
+        .voice-waveform {
+            display: flex;
+            justify-content: center;
+            align-items: end;
+            gap: 2px;
+            height: 30px;
+            margin: 10px 0;
+        }
+
+        .wave-bar {
+            width: 4px;
+            background: #45A1CF;
+            border-radius: 2px;
+            animation: wave 1.5s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 5px; }
+            50% { height: 20px; }
+        }
+
+        .voice-mode-toggle {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            margin: 0 10px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #CBD5E1;
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #45A1CF;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
 
                 /* Affirmation Card */
         .affirmation-card {
@@ -395,9 +532,17 @@
         <div class="app-state active" id="welcomeScreen">
             <div class="welcome-screen">
                 <button class="main-button" onclick="startSession()">
-                    🧘‍♂️ I just fapped
+                    🧘‍♂️ Start feeling better
                 </button>
                 <br>
+                <div class="voice-mode-toggle">
+                    <span>Text</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="voiceModeToggle" onchange="toggleVoiceMode()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Voice</span>
+                </div>
                 <button class="secondary-button" onclick="togglePromptManager()">
                     ⚙️ Edit AI Prompts
                 </button>
@@ -434,12 +579,36 @@
         <div class="app-state" id="chatSession">
             <div class="chat-container" id="chatContainer">
                 <!-- Messages will be populated here -->
-        </div>
+            </div>
 
+            <!-- Text Input -->
             <div class="message-input" id="messageInput" style="display: none;">
                 <input type="text" id="userInput" placeholder="Type your response..." onkeypress="handleKeyPress(event)">
                 <button class="send-button" onclick="sendMessage()">Send</button>
-        </div>
+            </div>
+
+            <!-- Voice Input -->
+            <div class="voice-controls" id="voiceControls" style="display: none;">
+                <button class="voice-button record" id="recordButton" onclick="toggleRecording()">
+                    🎤
+                </button>
+                <button class="voice-button play" id="playButton" onclick="playRecording()" style="display: none;">
+                    ▶️
+                </button>
+                <button class="voice-button stop" id="stopPlayButton" onclick="stopPlayback()" style="display: none;">
+                    ⏹️
+                </button>
+            </div>
+
+            <div class="voice-indicator" id="voiceIndicator"></div>
+            
+            <div class="voice-waveform" id="voiceWaveform" style="display: none;">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
         
             <div style="text-align: center; margin-top: 20px;">
                 <button class="secondary-button" onclick="resetSession()">🏠 Start Over</button>
@@ -496,6 +665,16 @@
         let sessionData = {};
         let currentPromptKey = 'SYSTEM_PROMPT';
         let fapulousPrompts = {};
+        let isVoiceMode = false;
+        
+        // Voice recording state
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let currentAudioBlob = null;
+        let currentAudioUrl = null;
+        let currentAudio = null;
+        let selectedVoice = 'alloy'; // Default TTS voice
         
         // Load prompts from backend
         async function loadPrompts() {
@@ -582,8 +761,17 @@
             sessionData = {};
             showScreen('chatSession');
             
+            // Initialize voice mode if enabled
+            if (isVoiceMode) {
+                await initializeVoiceMode();
+            }
+            
             // Call AI for initial response
-            await makeAICall('start');
+            if (isVoiceMode) {
+                await makeVoiceAICall('start');
+            } else {
+                await makeAICall('start');
+            }
         }
 
         function resetSession() {
@@ -591,6 +779,14 @@
             sessionData = {};
             document.getElementById('chatContainer').innerHTML = '';
             document.getElementById('messageInput').style.display = 'none';
+            document.getElementById('voiceControls').style.display = 'none';
+            document.getElementById('voiceIndicator').textContent = '';
+            
+            // Clean up voice resources
+            if (isVoiceMode) {
+                resetVoiceUI();
+            }
+            
             showScreen('welcomeScreen');
         }
 
@@ -687,9 +883,8 @@
                         // Show reveal button instead of input
                         showRevealButton();
                     } else if (currentStep !== 'complete') {
-                        // Show input for next response
-                        document.getElementById('messageInput').style.display = 'flex';
-                        document.getElementById('userInput').focus();
+                        // Show appropriate input controls
+                        showInputControls();
                     }
                 } else {
                     addMessage('Sorry, I encountered an error. Please try again.', false);
@@ -851,6 +1046,311 @@
             }
         `;
         document.head.appendChild(style);
+
+        // Voice Mode Functions
+        function toggleVoiceMode() {
+            isVoiceMode = document.getElementById('voiceModeToggle').checked;
+            console.log('Voice mode:', isVoiceMode ? 'enabled' : 'disabled');
+        }
+
+        async function initializeVoiceMode() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // Just test access, then stop the stream
+                stream.getTracks().forEach(track => track.stop());
+                console.log('Voice mode initialized successfully');
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                alert('Could not access microphone. Please allow microphone permissions and try again.');
+                // Fallback to text mode
+                document.getElementById('voiceModeToggle').checked = false;
+                isVoiceMode = false;
+            }
+        }
+
+        async function toggleRecording() {
+            if (isRecording) {
+                await stopRecording();
+            } else {
+                await startRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    currentAudioBlob = audioBlob;
+                    currentAudioUrl = URL.createObjectURL(audioBlob);
+                    
+                    // Show play button and hide waveform
+                    document.getElementById('playButton').style.display = 'inline-flex';
+                    document.getElementById('voiceWaveform').style.display = 'none';
+                    document.getElementById('voiceIndicator').textContent = 'Recording saved! Click play to review or record again.';
+                    
+                    // Automatically send the recording after a brief delay
+                    setTimeout(async () => {
+                        await sendVoiceMessage();
+                    }, 1000);
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                
+                // Update UI
+                document.getElementById('recordButton').classList.add('recording');
+                document.getElementById('recordButton').textContent = '⏹️';
+                document.getElementById('voiceIndicator').textContent = 'Recording... Click to stop';
+                document.getElementById('voiceWaveform').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                document.getElementById('voiceIndicator').textContent = 'Error accessing microphone';
+            }
+        }
+
+        async function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                
+                // Update UI
+                document.getElementById('recordButton').classList.remove('recording');
+                document.getElementById('recordButton').textContent = '🎤';
+                document.getElementById('voiceIndicator').textContent = 'Processing recording...';
+            }
+        }
+
+        function playRecording() {
+            if (currentAudioUrl) {
+                currentAudio = new Audio(currentAudioUrl);
+                currentAudio.play();
+                
+                document.getElementById('playButton').style.display = 'none';
+                document.getElementById('stopPlayButton').style.display = 'inline-flex';
+                document.getElementById('voiceIndicator').textContent = 'Playing recording...';
+                
+                currentAudio.onended = () => {
+                    document.getElementById('playButton').style.display = 'inline-flex';
+                    document.getElementById('stopPlayButton').style.display = 'none';
+                    document.getElementById('voiceIndicator').textContent = 'Playback finished';
+                };
+            }
+        }
+
+        function stopPlayback() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            
+            document.getElementById('playButton').style.display = 'inline-flex';
+            document.getElementById('stopPlayButton').style.display = 'none';
+            document.getElementById('voiceIndicator').textContent = 'Playback stopped';
+        }
+
+        async function sendVoiceMessage() {
+            if (!currentAudioBlob) {
+                document.getElementById('voiceIndicator').textContent = 'No recording to send';
+                return;
+            }
+
+            // Hide voice controls during processing
+            document.getElementById('voiceControls').style.display = 'none';
+            document.getElementById('voiceIndicator').textContent = 'Processing your message...';
+            
+            // Show loading in chat
+            showLoading();
+
+            try {
+                const formData = new FormData();
+                formData.append('audio', currentAudioBlob, 'recording.webm');
+                formData.append('step', currentStep);
+                formData.append('session_data', JSON.stringify(sessionData));
+                formData.append('voice', selectedVoice);
+
+                const response = await fetch('/api/voice-session', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    // Add user message to chat (transcribed)
+                    if (data.user_message) {
+                        addMessage(data.user_message, true);
+                    }
+                    
+                    // Add AI response as text first
+                    addMessage(data.ai_response, false);
+                    
+                    // Play AI response audio
+                    if (data.audio) {
+                        await playAIResponse(data.audio);
+                    }
+                    
+                    // Update session state
+                    currentStep = data.next_step;
+                    sessionData = data.session_data || sessionData;
+                    
+                    // Reset recording state
+                    resetVoiceUI();
+                    
+                    // Handle next step
+                    if (currentStep === 'final') {
+                        document.getElementById('affirmationText').textContent = data.ai_response;
+                        setTimeout(() => showScreen('finalScreen'), 2000);
+                    } else if (currentStep === 'reveal') {
+                        showRevealButton();
+                    } else if (currentStep !== 'complete') {
+                        // Show voice controls for next input
+                        document.getElementById('voiceControls').style.display = 'flex';
+                        document.getElementById('voiceIndicator').textContent = 'Click microphone to respond';
+                    }
+                    
+                } else {
+                    document.getElementById('voiceIndicator').textContent = 'Error: ' + (data.error || 'Unknown error');
+                    resetVoiceUI();
+                }
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error sending voice message:', error);
+                document.getElementById('voiceIndicator').textContent = 'Connection error. Please try again.';
+                resetVoiceUI();
+            }
+        }
+
+        async function playAIResponse(audioBase64) {
+            try {
+                // Convert base64 to blob
+                const byteCharacters = atob(audioBase64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const audioBlob = new Blob([byteArray], { type: 'audio/mpeg' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                const audio = new Audio(audioUrl);
+                document.getElementById('voiceIndicator').textContent = '🔊 Playing AI response...';
+                
+                audio.play();
+                
+                audio.onended = () => {
+                    document.getElementById('voiceIndicator').textContent = '';
+                    URL.revokeObjectURL(audioUrl);
+                };
+                
+                audio.onerror = () => {
+                    console.error('Error playing AI response audio');
+                    document.getElementById('voiceIndicator').textContent = 'Audio playback error';
+                };
+                
+            } catch (error) {
+                console.error('Error processing AI response audio:', error);
+                document.getElementById('voiceIndicator').textContent = 'Audio processing error';
+            }
+        }
+
+        function resetVoiceUI() {
+            // Clean up current recording
+            if (currentAudioUrl) {
+                URL.revokeObjectURL(currentAudioUrl);
+                currentAudioUrl = null;
+            }
+            currentAudioBlob = null;
+            audioChunks = [];
+            
+            // Reset UI elements
+            document.getElementById('recordButton').classList.remove('recording');
+            document.getElementById('recordButton').textContent = '🎤';
+            document.getElementById('playButton').style.display = 'none';
+            document.getElementById('stopPlayButton').style.display = 'none';
+            document.getElementById('voiceWaveform').style.display = 'none';
+        }
+
+        async function makeVoiceAICall(step, hasUserAudio = false) {
+            document.getElementById('voiceIndicator').textContent = 'Getting AI response...';
+            showLoading();
+
+            try {
+                const formData = new FormData();
+                formData.append('step', step);
+                formData.append('session_data', JSON.stringify(sessionData));
+                formData.append('voice', selectedVoice);
+                
+                if (!hasUserAudio) {
+                    // For initial AI call without user audio
+                    formData.append('user_message', '');
+                }
+
+                const response = await fetch('/api/voice-session', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    // Add AI response to chat
+                    addMessage(data.ai_response, false);
+                    
+                    // Play AI response audio
+                    if (data.audio) {
+                        await playAIResponse(data.audio);
+                    }
+                    
+                    // Update state
+                    currentStep = data.next_step;
+                    sessionData = data.session_data || sessionData;
+                    
+                    // Show voice controls for user input
+                    if (currentStep !== 'complete' && currentStep !== 'final') {
+                        document.getElementById('voiceControls').style.display = 'flex';
+                        document.getElementById('voiceIndicator').textContent = 'Click microphone to respond';
+                    }
+                    
+                } else {
+                    addMessage('Sorry, I encountered an error. Please try again.', false);
+                    document.getElementById('voiceIndicator').textContent = 'Error occurred';
+                }
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error:', error);
+                addMessage('Connection error. Please check your internet and try again.', false);
+                document.getElementById('voiceIndicator').textContent = 'Connection error';
+            }
+        }
+
+        // Modified existing functions to support voice mode
+        function showInputControls() {
+            if (isVoiceMode) {
+                document.getElementById('voiceControls').style.display = 'flex';
+                document.getElementById('messageInput').style.display = 'none';
+                document.getElementById('voiceIndicator').textContent = 'Click microphone to respond';
+            } else {
+                document.getElementById('messageInput').style.display = 'flex';
+                document.getElementById('voiceControls').style.display = 'none';
+                document.getElementById('userInput').focus();
+            }
+        }
 
         // Initialize app
         async function init() {
