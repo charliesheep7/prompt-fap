@@ -45,3 +45,6 @@ Thumbs.db
 
 # Environment variables (if we had them)
 .env 
+
+# Configuration files (personal settings)
+fapulous_config.json

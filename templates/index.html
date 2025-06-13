@@ -202,21 +202,25 @@
             box-shadow: 0 10px 20px rgba(69, 161, 207, 0.3);
         }
         
+        .chat-button:hover {
+            background: #2563EB;
+            transform: translateY(-1px);
+        }
+
         .secondary-button {
-            background: transparent;
-            color: #45A1CF;
-            border: 2px solid #45A1CF;
-            padding: 12px 24px;
-            border-radius: 25px;
+            background: #F3F4F6;
+            color: #374151;
+            border: 1px solid #D1D5DB;
+            padding: 8px 16px;
+            border-radius: 8px;
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 10px;
+            transition: all 0.2s ease;
         }
 
         .secondary-button:hover {
-            background: #45A1CF;
-            color: white;
+            background: #E5E7EB;
+            border-color: #9CA3AF;
         }
 
         /* Chat Interface */
@@ -677,6 +681,13 @@
                 <div class="config-section">
                     <h3>✏️ Edit Conversation Prompts</h3>
                     <p style="color: #6B8CA3; margin-bottom: 15px;">Customize what the AI says in each round</p>
+                    
+                    <div style="margin-bottom: 15px; text-align: right;">
+                        <button class="secondary-button" onclick="resetToDefaults()">
+                            🔄 Reset to Default Prompts
+                        </button>
+                    </div>
+                    
                     <div id="promptEditors">
                         <!-- Will be populated by JavaScript -->
                     </div>
@@ -839,15 +850,19 @@
                 const mode = isVoiceMode ? 'voice' : 'text';
                 const response = await fetch(`/api/config?mode=${mode}`);
                 const data = await response.json();
-                conversationConfig = data.conversation_config;
-                moodOptions = data.mood_options;
-                sessionData.conversation_config = {...conversationConfig};
                 
                 // Store both configs for mode switching
                 window.textConfig = data.text_config;
                 window.voiceConfig = data.voice_config;
                 
+                // Set current config based on mode
+                conversationConfig = isVoiceMode ? data.voice_config : data.text_config;
+                sessionData.conversation_config = {...conversationConfig};
+                
+                moodOptions = data.mood_options;
+                
                 console.log('Loaded config:', data);
+                console.log('Current conversation config:', conversationConfig);
             } catch (error) {
                 console.error('Error loading config:', error);
             }
@@ -855,20 +870,27 @@
 
         // Function to switch between text and voice configurations
         function switchMode(newMode) {
+            // Save current config before switching
+            if (document.getElementById('systemPrompt')) {
+                saveCurrentConfig();
+            }
+            
             if (newMode === 'voice' && window.voiceConfig) {
-                conversationConfig = window.voiceConfig;
+                conversationConfig = {...window.voiceConfig};
                 sessionData.conversation_config = {...window.voiceConfig};
             } else if (newMode === 'text' && window.textConfig) {
-                conversationConfig = window.textConfig;
+                conversationConfig = {...window.textConfig};
                 sessionData.conversation_config = {...window.textConfig};
             }
             
-                         // Update UI if config screen is visible
-             if (document.getElementById('configScreen').classList.contains('active')) {
-                 updateModeIndicator();
-                 createRoundsSelector();
-                 createPromptEditors();
-             }
+            // Update UI if config screen is visible
+            if (document.getElementById('configScreen').classList.contains('active')) {
+                updateModeIndicator();
+                createRoundsSelector();
+                createPromptEditors();
+            }
+            
+            console.log('Switched to', newMode, 'mode. Config:', conversationConfig);
         }
 
         // Navigation functions
@@ -950,6 +972,9 @@
             
             // Recreate prompt editors for new round count
             createPromptEditors();
+            
+            // Save configuration immediately
+            saveConfigToServer();
         }
 
         function createPromptEditors() {
@@ -1006,6 +1031,44 @@
             const affirmationPrompt = document.getElementById('affirmationPrompt');
             if (affirmationPrompt) {
                 sessionData.conversation_config.affirmation_prompt = affirmationPrompt.value;
+            }
+            
+            // Send to backend for persistence
+            saveConfigToServer();
+        }
+
+        async function saveConfigToServer() {
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mode: isVoiceMode ? 'voice' : 'text',
+                        rounds: sessionData.conversation_config.rounds,
+                        system_prompt: sessionData.conversation_config.system_prompt,
+                        round_prompts: sessionData.conversation_config.round_prompts,
+                        affirmation_prompt: sessionData.conversation_config.affirmation_prompt
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    // Update the stored config for the current mode
+                    if (isVoiceMode) {
+                        window.voiceConfig = {...sessionData.conversation_config};
+                    } else {
+                        window.textConfig = {...sessionData.conversation_config};
+                    }
+                    conversationConfig = {...sessionData.conversation_config};
+                    
+                    console.log('Configuration saved successfully');
+                } else {
+                    console.error('Error saving configuration:', result.error);
+                }
+            } catch (error) {
+                console.error('Error saving configuration:', error);
             }
         }
 
@@ -1073,15 +1136,14 @@
 
         function resetSession() {
             currentRound = 1;
+            
+            // Reset session data but keep the loaded configuration
             sessionData = {
-                conversation_config: {
-                    rounds: 5,
-                    system_prompt: '',
-                    round_prompts: []
-                },
+                conversation_config: {...conversationConfig}, // Use loaded config instead of blanks
                 selected_mood: null,
                 conversation: []
             };
+            
             document.getElementById('chatContainer').innerHTML = '';
             document.getElementById('messageInput').style.display = 'none';
             document.getElementById('voiceControls').style.display = 'none';
@@ -1716,6 +1778,8 @@
         // Initialize app
         async function init() {
             await loadConfig();
+            // Ensure sessionData has the loaded configuration
+            sessionData.conversation_config = {...conversationConfig};
         }
 
         // Load everything when page loads
@@ -1724,7 +1788,93 @@
         } else {
             init();
         }
+
+        async function resetToDefaults() {
+            if (!confirm('Are you sure you want to reset all prompts to default values? This will overwrite your custom prompts.')) {
+                return;
+            }
+            
+            // Get the appropriate default config based on current mode
+            const defaultConfig = isVoiceMode ? window.voiceConfig : window.textConfig;
+            
+            // Reset to defaults (use the original defaults, not current saved ones)
+            const originalDefaults = isVoiceMode ? {
+                "rounds": 5,
+                "system_prompt": "You are Fapulous-AI, a warm, evidence-based voice coach focused on men's post-orgasm recovery to help him achieve his goal: Feel less guilty after masturbation. Your tone is supportive, conversational, and lightly humorous when appropriate. Speak naturally as if talking to a friend. Cite the science in plain words once, **without academic jargon**. Never moralise or shame; assume masturbation is normal.",
+                "round_prompts": [
+                    "Acknowledge the user's current mood and normalize it using neuroscience. Speak warmly and naturally. Keep it under 25 words.",
+                    "Provide a gentle technique or insight based on their mood. Be encouraging and conversational. Keep it under 25 words.", 
+                    "Offer a practical tip or coping strategy. Speak warmly and personally. Keep it under 25 words.",
+                    "Give reassurance and perspective on their experience. Be empathetic and hopeful. Keep it under 25 words.",
+                    "Provide supportive guidance and encouragement. Speak warmly and personally. Keep it under 25 words."
+                ],
+                "affirmation_prompt": "Based on the user's conversation history and their initial mood, create a powerful, personalized affirmation that starts with \"I...\" \n\nThe affirmation should:\n1. Reflect insights from their conversation\n2. Address their initial emotional state\n3. Be empowering and forward-looking\n4. Use \"I\" statements for self-empowerment\n5. Be 12-20 words maximum (shorter for voice)\n6. Feel personal and meaningful\n7. Sound natural when spoken aloud\n\nGenerate ONLY the affirmation (starting with \"I...\"), nothing else."
+            } : {
+                "rounds": 5,
+                "system_prompt": "You are Fapulous-AI, a warm, evidence-based coach focused on men's post-orgasm recovery to help him achieve his goal: Feel less guilty after masturbation. Your tone is supportive, concise, and lightly humorous when appropriate. Cite the science in plain words once, **without academic jargon or hyperlinks**. Never moralise or shame; assume masturbation is normal.",
+                "round_prompts": [
+                    "Acknowledge the user's current mood and normalize it using neuroscience. Be supportive and validating. Keep it under 40 words.",
+                    "Provide a gentle technique or insight based on their mood. Be encouraging and mention progress. Keep it under 40 words.", 
+                    "Offer a practical tip or coping strategy. Be warm and understanding. Keep it under 40 words.",
+                    "Give reassurance and perspective on their experience. Be empathetic and hopeful. Keep it under 40 words.",
+                    "Provide supportive guidance and encouragement. Be warm and understanding. Keep it under 40 words."
+                ],
+                "affirmation_prompt": "Based on the user's conversation history and their initial mood, create a powerful, personalized affirmation that starts with \"I...\" \n\nThe affirmation should:\n1. Reflect insights from their conversation\n2. Address their initial emotional state\n3. Be empowering and forward-looking\n4. Use \"I\" statements for self-empowerment\n5. Be 15-25 words maximum\n6. Feel personal and meaningful\n\nGenerate ONLY the affirmation (starting with \"I...\"), nothing else."
+            };
+            
+            // Update session data
+            sessionData.conversation_config = {...originalDefaults};
+            conversationConfig = {...originalDefaults};
+            
+            // Update the stored configs
+            if (isVoiceMode) {
+                window.voiceConfig = {...originalDefaults};
+            } else {
+                window.textConfig = {...originalDefaults};
+            }
+            
+            // Refresh the UI
+            createRoundsSelector();
+            createPromptEditors();
+            
+            // Save to server
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mode: isVoiceMode ? 'voice' : 'text',
+                        rounds: originalDefaults.rounds,
+                        system_prompt: originalDefaults.system_prompt,
+                        round_prompts: originalDefaults.round_prompts,
+                        affirmation_prompt: originalDefaults.affirmation_prompt
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    // Show success feedback
+                    const button = document.querySelector('button[onclick="resetToDefaults()"]');
+                    const originalText = button.textContent;
+                    button.textContent = '✅ Reset Complete!';
+                    button.style.background = '#10B981';
+                    button.style.color = 'white';
+                    
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.background = '';
+                        button.style.color = '';
+                    }, 2000);
+                } else {
+                    alert('Error resetting configuration: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error resetting configuration:', error);
+                alert('Error resetting configuration. Please try again.');
+            }
+        }
     </script>
 </body>
-</html> 
 </html> 

@@ -22,6 +22,33 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 GROK_API_KEY = os.getenv('GROK_API_KEY')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
+# Configuration persistence
+CONFIG_FILE = 'fapulous_config.json'
+
+def save_config_to_file(config):
+    """Save configuration to JSON file"""
+    try:
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(config, f, indent=2)
+        print(f"Configuration saved to {CONFIG_FILE}")
+    except Exception as e:
+        print(f"Error saving config: {e}")
+
+def load_config_from_file():
+    """Load configuration from JSON file if it exists"""
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+            print(f"Configuration loaded from {CONFIG_FILE}")
+            return config
+        else:
+            print("No saved configuration found, using defaults")
+            return None
+    except Exception as e:
+        print(f"Error loading config: {e}")
+        return None
+
 # Validate that all required API keys are present - but only fail at runtime, not import time
 def validate_api_keys():
     if not OPENAI_API_KEY:
@@ -76,8 +103,19 @@ The affirmation should:
 Generate ONLY the affirmation (starting with "I..."), nothing else."""
 }
 
+# Load saved configuration or use defaults
+saved_config = load_config_from_file()
+if saved_config:
+    # Use saved configurations if they exist
+    CURRENT_TEXT_CONFIG = saved_config.get('text_config', DEFAULT_TEXT_CONFIG)
+    CURRENT_VOICE_CONFIG = saved_config.get('voice_config', DEFAULT_VOICE_CONFIG)
+else:
+    # Use default configurations
+    CURRENT_TEXT_CONFIG = DEFAULT_TEXT_CONFIG.copy()
+    CURRENT_VOICE_CONFIG = DEFAULT_VOICE_CONFIG.copy()
+
 # Fallback for existing sessions
-DEFAULT_CONVERSATION_CONFIG = DEFAULT_TEXT_CONFIG
+DEFAULT_CONVERSATION_CONFIG = CURRENT_TEXT_CONFIG
 
 # Mood options for user selection
 MOOD_OPTIONS = [
@@ -107,31 +145,40 @@ def get_config():
     mode = request.args.get('mode', 'text')  # 'text' or 'voice'
     
     if mode == 'voice':
-        config = DEFAULT_VOICE_CONFIG
+        config = CURRENT_VOICE_CONFIG
     else:
-        config = DEFAULT_TEXT_CONFIG
+        config = CURRENT_TEXT_CONFIG
     
     return jsonify({
         "conversation_config": config,
         "mood_options": MOOD_OPTIONS,
-        "text_config": DEFAULT_TEXT_CONFIG,
-        "voice_config": DEFAULT_VOICE_CONFIG
+        "text_config": CURRENT_TEXT_CONFIG,
+        "voice_config": CURRENT_VOICE_CONFIG
     })
 
 @app.route('/api/config', methods=['POST'])
 def update_config():
     """Update conversation configuration"""
+    global CURRENT_TEXT_CONFIG, CURRENT_VOICE_CONFIG, DEFAULT_CONVERSATION_CONFIG
+    
     data = request.get_json()
+    mode = data.get('mode', 'text')  # Determine which config to update
+    
+    # Select the appropriate config to update
+    if mode == 'voice':
+        target_config = CURRENT_VOICE_CONFIG
+    else:
+        target_config = CURRENT_TEXT_CONFIG
     
     # Update rounds if provided
     if 'rounds' in data:
         rounds = data['rounds']
         if not isinstance(rounds, int) or rounds < 3 or rounds > 10:
             return jsonify({"success": False, "error": "Rounds must be between 3 and 10"}), 400
-        DEFAULT_CONVERSATION_CONFIG['rounds'] = rounds
+        target_config['rounds'] = rounds
         
         # Adjust round_prompts array to match new rounds count
-        current_prompts = DEFAULT_CONVERSATION_CONFIG['round_prompts']
+        current_prompts = target_config['round_prompts']
         if len(current_prompts) < rounds:
             # Add default prompts if we need more
             default_prompt = "Continue the supportive conversation. Be warm and encouraging. Keep it under 30 words."
@@ -139,23 +186,37 @@ def update_config():
                 current_prompts.append(default_prompt)
         elif len(current_prompts) > rounds:
             # Trim if we have too many
-            DEFAULT_CONVERSATION_CONFIG['round_prompts'] = current_prompts[:rounds]
+            target_config['round_prompts'] = current_prompts[:rounds]
     
     # Update system prompt if provided
     if 'system_prompt' in data:
-        DEFAULT_CONVERSATION_CONFIG['system_prompt'] = data['system_prompt']
+        target_config['system_prompt'] = data['system_prompt']
     
     # Update round prompts if provided
     if 'round_prompts' in data:
-        if len(data['round_prompts']) != DEFAULT_CONVERSATION_CONFIG['rounds']:
+        if len(data['round_prompts']) != target_config['rounds']:
             return jsonify({"success": False, "error": "Number of round prompts must match rounds count"}), 400
-        DEFAULT_CONVERSATION_CONFIG['round_prompts'] = data['round_prompts']
+        target_config['round_prompts'] = data['round_prompts']
     
     # Update affirmation prompt if provided
     if 'affirmation_prompt' in data:
-        DEFAULT_CONVERSATION_CONFIG['affirmation_prompt'] = data['affirmation_prompt']
+        target_config['affirmation_prompt'] = data['affirmation_prompt']
     
-    return jsonify({"success": True, "config": DEFAULT_CONVERSATION_CONFIG})
+    # Update the global configs
+    if mode == 'voice':
+        CURRENT_VOICE_CONFIG = target_config
+    else:
+        CURRENT_TEXT_CONFIG = target_config
+        DEFAULT_CONVERSATION_CONFIG = target_config
+    
+    # Save to file for persistence
+    config_to_save = {
+        'text_config': CURRENT_TEXT_CONFIG,
+        'voice_config': CURRENT_VOICE_CONFIG
+    }
+    save_config_to_file(config_to_save)
+    
+    return jsonify({"success": True, "config": target_config})
 
 @app.route('/api/fapulous-session', methods=['POST'])
 def fapulous_session():
