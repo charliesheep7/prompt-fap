@@ -27,25 +27,32 @@ def validate_api_keys():
     if not OPENAI_API_KEY:
         raise ValueError("Missing required environment variable: OPENAI_API_KEY")
 
-# Fapulous AI prompts for guided meditation after masturbation
-FAPULOUS_PROMPTS = {
-    "SYSTEM_PROMPT": """YYou are Fapulous-AI, a warm, evidence-based coach focused on men's post-orgasm recovery to help him acheive his goal: Feel less guilty after masturbation. Your tone is supportive, concise, and lightly humorous when appropriate. Cite the science in plain words once, **without academic jargon or hyperlinks**. Never moralise or shame; assume masturbation is normal. """,
-    
-    "QUESTION_1_PROMPT": """Acknowledge the user's mood in 1–2 lines. Normalize it using neuroscience. Avoid trying to "solve" anything yet — just validate and inform.
-
-Keep it under 20 words.""",
-    
-    "QUESTION_2_PROMPT": """Respond with 1 short, confident line that tells the user you're collecting the best technique for that issue. Mention that the next session should make them feel x% better soon — make it light, not clinical.
-
-Do not use breathwork, science, or affirmation yet.
-Keep it under 20 words.""",
-    
-    "QUESTION_3_PROMPT": """Acknowledge the user's feeling with warmth and understanding. Tell them you have an affirmation card just for them, you want them to read it to themselves . but don't show the content. Be empathetic and encouraging.
-
-Keep it under 20 words.""",
-    
-    "FINAL_CARD_PROMPT": """Based on user's goal from last response give a calm affirmation that starts with "I..." and stays under 20 words."""
+# Default conversation configuration
+DEFAULT_CONVERSATION_CONFIG = {
+    "rounds": 5,
+    "system_prompt": """You are Fapulous-AI, a warm, evidence-based coach focused on men's post-orgasm recovery to help him achieve his goal: Feel less guilty after masturbation. Your tone is supportive, concise, and lightly humorous when appropriate. Cite the science in plain words once, **without academic jargon or hyperlinks**. Never moralise or shame; assume masturbation is normal.""",
+    "round_prompts": [
+        "Acknowledge the user's current mood and normalize it using neuroscience. Be supportive and validating. Keep it under 30 words.",
+        "Provide a gentle technique or insight based on their mood. Be encouraging and mention progress. Keep it under 30 words.", 
+        "Offer a practical tip or coping strategy. Be warm and understanding. Keep it under 30 words.",
+        "Give reassurance and perspective on their experience. Be empathetic and hopeful. Keep it under 30 words.",
+        "End with a personalized affirmation that starts with 'I...' based on their mood and responses. Keep it under 25 words."
+    ]
 }
+
+# Mood options for user selection
+MOOD_OPTIONS = [
+    {"id": "stressed", "label": "Stressed", "emoji": "😰"},
+    {"id": "guilty", "label": "Guilty", "emoji": "😔"},
+    {"id": "relieved", "label": "Relieved", "emoji": "😌"},
+    {"id": "zen", "label": "Zen", "emoji": "🧘"},
+    {"id": "anxious", "label": "Anxious", "emoji": "😟"},
+    {"id": "ashamed", "label": "Ashamed", "emoji": "😳"},
+    {"id": "confused", "label": "Confused", "emoji": "😵"},
+    {"id": "peaceful", "label": "Peaceful", "emoji": "😇"},
+    {"id": "frustrated", "label": "Frustrated", "emoji": "😤"},
+    {"id": "neutral", "label": "Neutral", "emoji": "😐"}
+]
 
 # Configure clients
 if GEMINI_API_KEY:
@@ -55,24 +62,48 @@ if GEMINI_API_KEY:
 def index():
     return render_template('index.html')
 
-@app.route('/api/prompts', methods=['GET'])
-def get_prompts():
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    """Get current conversation configuration and mood options"""
     return jsonify({
-        "fapulous_prompts": FAPULOUS_PROMPTS
+        "conversation_config": DEFAULT_CONVERSATION_CONFIG,
+        "mood_options": MOOD_OPTIONS
     })
 
-@app.route('/api/update-prompt', methods=['POST'])
-def update_prompt():
-    """Update a specific prompt"""
+@app.route('/api/config', methods=['POST'])
+def update_config():
+    """Update conversation configuration"""
     data = request.get_json()
-    prompt_key = data.get('prompt_key')
-    new_prompt = data.get('new_prompt')
     
-    if prompt_key in FAPULOUS_PROMPTS:
-        FAPULOUS_PROMPTS[prompt_key] = new_prompt
-        return jsonify({"success": True, "message": f"Updated {prompt_key}"})
-    else:
-        return jsonify({"success": False, "error": "Invalid prompt key"}), 400
+    # Update rounds if provided
+    if 'rounds' in data:
+        rounds = data['rounds']
+        if not isinstance(rounds, int) or rounds < 3 or rounds > 10:
+            return jsonify({"success": False, "error": "Rounds must be between 3 and 10"}), 400
+        DEFAULT_CONVERSATION_CONFIG['rounds'] = rounds
+        
+        # Adjust round_prompts array to match new rounds count
+        current_prompts = DEFAULT_CONVERSATION_CONFIG['round_prompts']
+        if len(current_prompts) < rounds:
+            # Add default prompts if we need more
+            default_prompt = "Continue the supportive conversation. Be warm and encouraging. Keep it under 30 words."
+            while len(current_prompts) < rounds:
+                current_prompts.append(default_prompt)
+        elif len(current_prompts) > rounds:
+            # Trim if we have too many
+            DEFAULT_CONVERSATION_CONFIG['round_prompts'] = current_prompts[:rounds]
+    
+    # Update system prompt if provided
+    if 'system_prompt' in data:
+        DEFAULT_CONVERSATION_CONFIG['system_prompt'] = data['system_prompt']
+    
+    # Update round prompts if provided
+    if 'round_prompts' in data:
+        if len(data['round_prompts']) != DEFAULT_CONVERSATION_CONFIG['rounds']:
+            return jsonify({"success": False, "error": "Number of round prompts must match rounds count"}), 400
+        DEFAULT_CONVERSATION_CONFIG['round_prompts'] = data['round_prompts']
+    
+    return jsonify({"success": True, "config": DEFAULT_CONVERSATION_CONFIG})
 
 @app.route('/api/fapulous-session', methods=['POST'])
 def fapulous_session():
@@ -84,28 +115,34 @@ def fapulous_session():
         return jsonify({"error": str(e)}), 500
     
     data = request.get_json()
-    step = data.get('step')  # 'start', 'question1', 'question2', 'reveal', 'final'
+    current_round = data.get('current_round', 1)  # 1-based round number
     user_message = data.get('user_message', '')
     session_data = data.get('session_data', {})
+    mood = session_data.get('selected_mood', 'neutral')
     
-    if step == 'start':
-        # Initial response when user clicks "I just fapped"
-        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_1_PROMPT"]
-        user_content = "The user just masturbated and wants guidance."
-    elif step == 'question1':
-        # Second response after user's first reply
-        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_2_PROMPT"]
-        user_content = f"User's first response: {user_message}"
-    elif step == 'question2':
-        # Third response - acknowledge feelings and mention affirmation card
-        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_3_PROMPT"]
-        user_content = f"User's second response: {user_message}"
-        
-        # Also generate the affirmation for later use
-        affirmation_prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["FINAL_CARD_PROMPT"]
-        affirmation_content = f"User's goal/responses: {user_message}"
+    # Get conversation config
+    config = session_data.get('conversation_config', DEFAULT_CONVERSATION_CONFIG)
+    total_rounds = config['rounds']
+    
+    # Validate round number
+    if current_round < 1 or current_round > total_rounds:
+        return jsonify({"error": f"Invalid round number. Must be between 1 and {total_rounds}"}), 400
+    
+    # Get the appropriate prompt for this round
+    system_prompt = config['system_prompt']
+    round_prompt = config['round_prompts'][current_round - 1]  # Convert to 0-based index
+    
+    # Build context based on mood and conversation history
+    mood_context = f"The user is currently feeling {mood}."
+    if current_round == 1:
+        user_content = f"{mood_context} This is the first round of a {total_rounds}-round conversation. The user just masturbated and wants guidance."
     else:
-        return jsonify({"error": "Invalid step"}), 400
+        conversation_history = session_data.get('conversation', [])
+        history_text = "\n".join([f"Round {i+1} - User: {msg['user']}, AI: {msg['ai']}" for i, msg in enumerate(conversation_history)])
+        user_content = f"{mood_context}\n\nConversation history:\n{history_text}\n\nCurrent user message: {user_message}"
+    
+    # Create the full prompt
+    full_prompt = f"{system_prompt}\n\nRound {current_round} instruction: {round_prompt}"
     
     def call_openai_chat(system_prompt, user_content):
         try:
@@ -154,48 +191,37 @@ def fapulous_session():
             }
     
     # Get AI response
-    result = call_openai_chat(prompt, user_content)
+    result = call_openai_chat(full_prompt, user_content)
     
     if result["success"]:
+        # Add conversation to session data
+        if 'conversation' not in session_data:
+            session_data['conversation'] = []
+        
+        # Add the current exchange
+        if current_round > 1 or user_message:  # Don't add empty first round
+            session_data['conversation'].append({
+                "round": current_round,
+                "user": user_message,
+                "ai": result["response"]
+            })
+        
+        # Determine if conversation is complete
+        is_complete = current_round >= total_rounds
+        next_round = current_round + 1 if not is_complete else None
+        
         response_data = {
             "ai_response": result["response"],
-            "step": step,
-            "next_step": get_next_step(step),
+            "current_round": current_round,
+            "next_round": next_round,
+            "total_rounds": total_rounds,
+            "is_complete": is_complete,
             "session_data": session_data
         }
-        
-        # For question2, also generate the affirmation and store it
-        if step == 'question2':
-            affirmation_result = call_openai_chat(affirmation_prompt, affirmation_content)
-            if affirmation_result["success"]:
-                if 'stored_affirmation' not in session_data:
-                    session_data['stored_affirmation'] = affirmation_result["response"]
-                response_data["session_data"] = session_data
-        
-        # Add user message to session data for context
-        if user_message:
-            if 'conversation' not in session_data:
-                session_data['conversation'] = []
-            session_data['conversation'].append({
-                "user": user_message,
-                "ai": result["response"],
-                "step": step
-            })
-            response_data["session_data"] = session_data
         
         return jsonify(response_data)
     else:
         return jsonify({"error": result["error"]}), 500
-
-def get_next_step(current_step):
-    """Get the next step in the conversation flow"""
-    flow = {
-        'start': 'question1',
-        'question1': 'question2', 
-        'question2': 'reveal',
-        'final': 'complete'
-    }
-    return flow.get(current_step, 'complete')
 
 @app.route('/api/transcribe-audio', methods=['POST'])
 def transcribe_audio():
@@ -374,18 +400,33 @@ def voice_session():
         # Fallback to text message
         user_message = request.form.get('user_message', '')
     
-    # Process AI response (reuse existing logic)
-    if step == 'start':
-        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_1_PROMPT"]
-        user_content = "The user just masturbated and wants guidance."
-    elif step == 'question1':
-        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_2_PROMPT"]
-        user_content = f"User's first response: {user_message}"
-    elif step == 'question2':
-        prompt = FAPULOUS_PROMPTS["SYSTEM_PROMPT"] + "\n\n" + FAPULOUS_PROMPTS["QUESTION_3_PROMPT"]
-        user_content = f"User's second response: {user_message}"
+    # Get form data for conversation flow
+    current_round = int(request.form.get('current_round', 1))
+    mood = session_data.get('selected_mood', 'neutral')
+    
+    # Get conversation config
+    config = session_data.get('conversation_config', DEFAULT_CONVERSATION_CONFIG)
+    total_rounds = config['rounds']
+    
+    # Validate round number
+    if current_round < 1 or current_round > total_rounds:
+        return jsonify({"error": f"Invalid round number. Must be between 1 and {total_rounds}"}), 400
+    
+    # Get the appropriate prompt for this round
+    system_prompt = config['system_prompt']
+    round_prompt = config['round_prompts'][current_round - 1]
+    
+    # Build context based on mood and conversation history
+    mood_context = f"The user is currently feeling {mood}."
+    if current_round == 1:
+        user_content = f"{mood_context} This is the first round of a {total_rounds}-round conversation. The user just masturbated and wants guidance."
     else:
-        return jsonify({"error": "Invalid step"}), 400
+        conversation_history = session_data.get('conversation', [])
+        history_text = "\n".join([f"Round {i+1} - User: {msg['user']}, AI: {msg['ai']}" for i, msg in enumerate(conversation_history)])
+        user_content = f"{mood_context}\n\nConversation history:\n{history_text}\n\nCurrent user message: {user_message}"
+    
+    # Create the full prompt
+    full_prompt = f"{system_prompt}\n\nRound {current_round} instruction: {round_prompt}"
     
     # Get AI text response
     def call_openai_chat(system_prompt, user_content):
@@ -434,7 +475,7 @@ def voice_session():
                 "error": str(e)
             }
     
-    ai_result = call_openai_chat(prompt, user_content)
+    ai_result = call_openai_chat(full_prompt, user_content)
     
     if not ai_result["success"]:
         return jsonify({"error": ai_result["error"]}), 500
@@ -467,14 +508,20 @@ def voice_session():
             audio_b64 = base64.b64encode(tts_response.content).decode('utf-8')
             
             # Update session data
-            if user_message:
-                if 'conversation' not in session_data:
-                    session_data['conversation'] = []
+            if 'conversation' not in session_data:
+                session_data['conversation'] = []
+            
+            # Add the current exchange
+            if current_round > 1 or user_message:  # Don't add empty first round
                 session_data['conversation'].append({
+                    "round": current_round,
                     "user": user_message,
-                    "ai": ai_response_text,
-                    "step": step
+                    "ai": ai_response_text
                 })
+            
+            # Determine if conversation is complete
+            is_complete = current_round >= total_rounds
+            next_round = current_round + 1 if not is_complete else None
             
             return jsonify({
                 "success": True,
@@ -482,8 +529,10 @@ def voice_session():
                 "user_message": user_message,
                 "audio": audio_b64,
                 "format": "mp3",
-                "step": step,
-                "next_step": get_next_step(step),
+                "current_round": current_round,
+                "next_round": next_round,
+                "total_rounds": total_rounds,
+                "is_complete": is_complete,
                 "session_data": session_data
             })
         else:

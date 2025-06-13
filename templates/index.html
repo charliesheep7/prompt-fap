@@ -72,6 +72,116 @@
             text-align: center;
             padding: 40px 0;
         }
+
+        /* Configuration Screen */
+        .config-screen {
+            padding: 20px 0;
+        }
+
+        .config-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #F8FAFC;
+            border-radius: 15px;
+        }
+
+        .config-section h3 {
+            margin-bottom: 15px;
+            color: #031340;
+        }
+
+        .rounds-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .round-option {
+            padding: 8px 16px;
+            border: 2px solid #CBD5E1;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .round-option.selected {
+            border-color: #45A1CF;
+            background: #45A1CF;
+            color: white;
+        }
+
+        .prompt-editor {
+            margin-bottom: 15px;
+        }
+
+        .prompt-editor label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #031340;
+        }
+
+        .prompt-editor textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #CBD5E1;
+            border-radius: 10px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .prompt-editor textarea:focus {
+            border-color: #45A1CF;
+            outline: none;
+        }
+
+        /* Mood Selection Screen */
+        .mood-screen {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .mood-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .mood-option {
+            padding: 20px 15px;
+            border: 2px solid #CBD5E1;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .mood-option:hover {
+            border-color: #45A1CF;
+            transform: translateY(-2px);
+        }
+
+        .mood-option.selected {
+            border-color: #45A1CF;
+            background: #45A1CF;
+            color: white;
+        }
+
+        .mood-emoji {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .mood-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
         
         .main-button {
             background: linear-gradient(135deg, #45A1CF 0%, #5BA3D6 100%);
@@ -531,7 +641,7 @@
         <!-- Welcome Screen -->
         <div class="app-state active" id="welcomeScreen">
             <div class="welcome-screen">
-                <button class="main-button" onclick="startSession()">
+                <button class="main-button" onclick="showConfigScreen()">
                     🧘‍♂️ Start feeling better
                 </button>
                 <br>
@@ -543,34 +653,54 @@
                     </label>
                     <span>Voice</span>
                 </div>
-                <button class="secondary-button" onclick="togglePromptManager()">
-                    ⚙️ Edit AI Prompts
-                </button>
             </div>
         </div>
 
-        <!-- Prompt Management -->
-        <div class="app-state" id="promptManager">
-            <div class="prompt-manager">
-                <h3>Edit Fapulous AI Prompts</h3>
-                <p style="margin-bottom: 20px; color: #6B8CA3;">Customize how the AI responds during each step of the recovery session.</p>
+        <!-- Configuration Screen -->
+        <div class="app-state" id="configScreen">
+            <div class="config-screen">
+                <h2 style="text-align: center; margin-bottom: 30px;">Customize Your Session</h2>
                 
-            <div class="prompt-tabs">
-                    <button class="prompt-tab active" data-prompt="SYSTEM_PROMPT">System Prompt</button>
-                    <button class="prompt-tab" data-prompt="QUESTION_1_PROMPT">Question 1</button>
-                    <button class="prompt-tab" data-prompt="QUESTION_2_PROMPT">Question 2</button>
-                    <button class="prompt-tab" data-prompt="QUESTION_3_PROMPT">Question 3</button>
-                    <button class="prompt-tab" data-prompt="FINAL_CARD_PROMPT">Final Card</button>
-            </div>
-            
-                <div class="prompt-editor">
-                    <textarea id="promptTextarea" placeholder="Loading prompt..."></textarea>
+                <div class="config-section">
+                    <h3>📊 Number of Conversation Rounds</h3>
+                    <p style="color: #6B8CA3; margin-bottom: 15px;">Choose how many back-and-forth exchanges you'd like (3-10 rounds)</p>
+                    <div class="rounds-selector" id="roundsSelector">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>✏️ Edit Conversation Prompts</h3>
+                    <p style="color: #6B8CA3; margin-bottom: 15px;">Customize what the AI says in each round</p>
+                    <div id="promptEditors">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="main-button" onclick="startMoodSelection()">Next: Choose Mood →</button>
                     <br>
-                    <button class="save-prompt-btn" onclick="savePrompt()">Save Changes</button>
+                    <button class="secondary-button" onclick="backToWelcome()">← Back</button>
+                </div>
             </div>
-            
-                <div style="margin-top: 20px;">
-                    <button class="secondary-button" onclick="backToWelcome()">← Back to App</button>
+        </div>
+
+        <!-- Mood Selection Screen -->
+        <div class="app-state" id="moodScreen">
+            <div class="mood-screen">
+                <h2>How are you feeling right now?</h2>
+                <p style="color: #6B8CA3; margin-bottom: 20px;">Select the mood that best describes your current state</p>
+                
+                <div class="mood-grid" id="moodGrid">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="main-button" id="startChatButton" onclick="startConversation()" disabled>
+                        Start Conversation 💬
+                    </button>
+                    <br>
+                    <button class="secondary-button" onclick="backToConfig()">← Back to Config</button>
                 </div>
             </div>
         </div>
@@ -661,10 +791,18 @@
 
     <script>
         // App state
-        let currentStep = 'start';
-        let sessionData = {};
-        let currentPromptKey = 'SYSTEM_PROMPT';
-        let fapulousPrompts = {};
+        let currentRound = 1;
+        let sessionData = {
+            conversation_config: {
+                rounds: 5,
+                system_prompt: '',
+                round_prompts: []
+            },
+            selected_mood: null,
+            conversation: []
+        };
+        let conversationConfig = {};
+        let moodOptions = [];
         let isVoiceMode = false;
         
         // Voice recording state
@@ -676,77 +814,168 @@
         let currentAudio = null;
         let selectedVoice = 'alloy'; // Default TTS voice
         
-        // Load prompts from backend
-        async function loadPrompts() {
+        // Load configuration from backend
+        async function loadConfig() {
             try {
-                const response = await fetch('/api/prompts');
+                const response = await fetch('/api/config');
                 const data = await response.json();
-                fapulousPrompts = data.fapulous_prompts;
-                updatePromptEditor();
+                conversationConfig = data.conversation_config;
+                moodOptions = data.mood_options;
+                sessionData.conversation_config = {...conversationConfig};
+                console.log('Loaded config:', data);
             } catch (error) {
-                console.error('Error loading prompts:', error);
+                console.error('Error loading config:', error);
             }
         }
 
-        // Prompt management
-        function togglePromptManager() {
-            showScreen('promptManager');
+        // Navigation functions
+        function showConfigScreen() {
+            showScreen('configScreen');
+            initializeConfig();
+        }
+
+        function startMoodSelection() {
+            saveCurrentConfig();
+            showScreen('moodScreen');
+            initializeMoodSelection();
         }
 
         function backToWelcome() {
             showScreen('welcomeScreen');
         }
 
-        function updatePromptEditor() {
-            const textarea = document.getElementById('promptTextarea');
-            if (textarea && fapulousPrompts[currentPromptKey]) {
-                textarea.value = fapulousPrompts[currentPromptKey];
+        function backToConfig() {
+            showScreen('configScreen');
+        }
+
+        function startConversation() {
+            if (!sessionData.selected_mood) {
+                alert('Please select a mood first!');
+                return;
+            }
+            currentRound = 1;
+            sessionData.conversation = [];
+            showScreen('chatSession');
+            startFirstRound();
+        }
+
+        // Initialize configuration screen
+        function initializeConfig() {
+            createRoundsSelector();
+            createPromptEditors();
+        }
+
+        function createRoundsSelector() {
+            const container = document.getElementById('roundsSelector');
+            container.innerHTML = '';
+            
+            for (let i = 3; i <= 10; i++) {
+                const option = document.createElement('div');
+                option.className = 'round-option';
+                option.textContent = i;
+                option.onclick = () => selectRounds(i);
+                
+                if (i === sessionData.conversation_config.rounds) {
+                    option.classList.add('selected');
+                }
+                
+                container.appendChild(option);
             }
         }
 
-        // Handle prompt tab clicks
-        document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.prompt-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                    // Update active tab
-                    document.querySelectorAll('.prompt-tab').forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    
-                    // Update current prompt key and editor
-                    currentPromptKey = tab.dataset.prompt;
-                    updatePromptEditor();
-                });
-            });
-        });
-        
-        async function savePrompt() {
-            const textarea = document.getElementById('promptTextarea');
-            const newPrompt = textarea.value;
+        function selectRounds(rounds) {
+            sessionData.conversation_config.rounds = rounds;
             
-            try {
-                const response = await fetch('/api/update-prompt', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        prompt_key: currentPromptKey,
-                        new_prompt: newPrompt
-                    })
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    fapulousPrompts[currentPromptKey] = newPrompt;
-                    alert('Prompt updated successfully!');
-                } else {
-                    alert('Error updating prompt: ' + result.error);
+            // Update UI
+            document.querySelectorAll('.round-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (parseInt(opt.textContent) === rounds) {
+                    opt.classList.add('selected');
                 }
-            } catch (error) {
-                console.error('Error saving prompt:', error);
-                alert('Error saving prompt');
+            });
+            
+            // Recreate prompt editors for new round count
+            createPromptEditors();
+        }
+
+        function createPromptEditors() {
+            const container = document.getElementById('promptEditors');
+            container.innerHTML = '';
+            
+            // System prompt editor
+            const systemDiv = document.createElement('div');
+            systemDiv.className = 'prompt-editor';
+            systemDiv.innerHTML = `
+                <label>System Prompt (Overall AI personality)</label>
+                <textarea id="systemPrompt" placeholder="Enter system prompt...">${sessionData.conversation_config.system_prompt}</textarea>
+            `;
+            container.appendChild(systemDiv);
+            
+            // Round prompt editors
+            for (let i = 0; i < sessionData.conversation_config.rounds; i++) {
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'prompt-editor';
+                roundDiv.innerHTML = `
+                    <label>Round ${i + 1} Prompt</label>
+                    <textarea id="roundPrompt${i}" placeholder="Enter prompt for round ${i + 1}...">${sessionData.conversation_config.round_prompts[i] || ''}</textarea>
+                `;
+                container.appendChild(roundDiv);
             }
         }
+
+        function saveCurrentConfig() {
+            // Save system prompt
+            const systemPrompt = document.getElementById('systemPrompt');
+            if (systemPrompt) {
+                sessionData.conversation_config.system_prompt = systemPrompt.value;
+            }
+            
+            // Save round prompts
+            sessionData.conversation_config.round_prompts = [];
+            for (let i = 0; i < sessionData.conversation_config.rounds; i++) {
+                const promptInput = document.getElementById(`roundPrompt${i}`);
+                if (promptInput) {
+                    sessionData.conversation_config.round_prompts.push(promptInput.value);
+                }
+            }
+        }
+
+        // Initialize mood selection
+        function initializeMoodSelection() {
+            const container = document.getElementById('moodGrid');
+            container.innerHTML = '';
+            
+            moodOptions.forEach(mood => {
+                const option = document.createElement('div');
+                option.className = 'mood-option';
+                option.onclick = () => selectMood(mood.id);
+                option.innerHTML = `
+                    <span class="mood-emoji">${mood.emoji}</span>
+                    <span class="mood-label">${mood.label}</span>
+                `;
+                container.appendChild(option);
+            });
+        }
+
+        function selectMood(moodId) {
+            sessionData.selected_mood = moodId;
+            
+            // Update UI
+            document.querySelectorAll('.mood-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.target.closest('.mood-option').classList.add('selected');
+            
+            // Enable start button
+            document.getElementById('startChatButton').disabled = false;
+        }
+
+        // Handle DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+        });
+        
+
 
         // Session management
         function showScreen(screenId) {
@@ -756,10 +985,9 @@
             document.getElementById(screenId).classList.add('active');
         }
 
-        async function startSession() {
-            currentStep = 'start';
-            sessionData = {};
-            showScreen('chatSession');
+        async function startFirstRound() {
+            currentRound = 1;
+            document.getElementById('chatContainer').innerHTML = '';
             
             // Initialize voice mode if enabled
             if (isVoiceMode) {
@@ -768,15 +996,23 @@
             
             // Call AI for initial response
             if (isVoiceMode) {
-                await makeVoiceAICall('start');
+                await makeVoiceAICall(currentRound);
             } else {
-                await makeAICall('start');
+                await makeAICall(currentRound);
             }
         }
 
         function resetSession() {
-            currentStep = 'start';
-            sessionData = {};
+            currentRound = 1;
+            sessionData = {
+                conversation_config: {
+                    rounds: 5,
+                    system_prompt: '',
+                    round_prompts: []
+                },
+                selected_mood: null,
+                conversation: []
+            };
             document.getElementById('chatContainer').innerHTML = '';
             document.getElementById('messageInput').style.display = 'none';
             document.getElementById('voiceControls').style.display = 'none';
@@ -851,7 +1087,7 @@
             }
         }
 
-        async function makeAICall(step, userMessage = '') {
+        async function makeAICall(round, userMessage = '') {
             showLoading();
             
             try {
@@ -861,7 +1097,7 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        step: step,
+                        current_round: round,
                         user_message: userMessage,
                         session_data: sessionData
                     })
@@ -872,19 +1108,17 @@
                 
                 if (data.ai_response) {
                     addMessage(data.ai_response, false);
-                    currentStep = data.next_step;
                     sessionData = data.session_data || sessionData;
                     
-                    if (currentStep === 'final') {
-                        // Show final affirmation
+                    if (data.is_complete) {
+                        // Show final screen after last round
                         document.getElementById('affirmationText').textContent = data.ai_response;
-                        setTimeout(() => showScreen('finalScreen'), 1000);
-                    } else if (currentStep === 'reveal') {
-                        // Show reveal button instead of input
-                        showRevealButton();
-                    } else if (currentStep !== 'complete') {
-                        // Show appropriate input controls
+                        setTimeout(() => showScreen('finalScreen'), 2000);
+                    } else {
+                        // Update current round and show input for next round
+                        currentRound = data.next_round;
                         showInputControls();
+                        updateProgressIndicator(data.current_round, data.total_rounds);
                     }
                 } else {
                     addMessage('Sorry, I encountered an error. Please try again.', false);
@@ -894,7 +1128,32 @@
                 hideLoading();
                 console.error('Error:', error);
                 addMessage('Connection error. Please check your internet and try again.', false);
+            }
         }
+
+        function updateProgressIndicator(current, total) {
+            // Add progress indicator to show which round we're in
+            const chatContainer = document.getElementById('chatContainer');
+            
+            // Remove existing progress indicator
+            const existingProgress = document.getElementById('progressIndicator');
+            if (existingProgress) {
+                existingProgress.remove();
+            }
+            
+            // Add new progress indicator
+            const progressDiv = document.createElement('div');
+            progressDiv.id = 'progressIndicator';
+            progressDiv.style.cssText = `
+                text-align: center;
+                margin: 15px 0;
+                color: #6B8CA3;
+                font-size: 0.9rem;
+                font-style: italic;
+            `;
+            progressDiv.textContent = `Round ${current} of ${total} completed`;
+            chatContainer.appendChild(progressDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         function handleKeyPress(event) {
@@ -915,7 +1174,7 @@
             document.getElementById('messageInput').style.display = 'none';
             
             // Call AI with user message
-            await makeAICall(currentStep, userMessage);
+            await makeAICall(currentRound, userMessage);
         }
 
         function showRevealButton() {
@@ -1176,7 +1435,7 @@
             try {
                 const formData = new FormData();
                 formData.append('audio', currentAudioBlob, 'recording.webm');
-                formData.append('step', currentStep);
+                formData.append('current_round', currentRound);
                 formData.append('session_data', JSON.stringify(sessionData));
                 formData.append('voice', selectedVoice);
 
@@ -1203,22 +1462,21 @@
                     }
                     
                     // Update session state
-                    currentStep = data.next_step;
                     sessionData = data.session_data || sessionData;
                     
                     // Reset recording state
                     resetVoiceUI();
                     
                     // Handle next step
-                    if (currentStep === 'final') {
+                    if (data.is_complete) {
                         document.getElementById('affirmationText').textContent = data.ai_response;
                         setTimeout(() => showScreen('finalScreen'), 2000);
-                    } else if (currentStep === 'reveal') {
-                        showRevealButton();
-                    } else if (currentStep !== 'complete') {
-                        // Show voice controls for next input
+                    } else {
+                        // Update current round and show voice controls for next input
+                        currentRound = data.next_round;
                         document.getElementById('voiceControls').style.display = 'flex';
                         document.getElementById('voiceIndicator').textContent = 'Click microphone to respond';
+                        updateProgressIndicator(data.current_round, data.total_rounds);
                     }
                     
                 } else {
@@ -1284,13 +1542,13 @@
             document.getElementById('voiceWaveform').style.display = 'none';
         }
 
-        async function makeVoiceAICall(step, hasUserAudio = false) {
+        async function makeVoiceAICall(round, hasUserAudio = false) {
             document.getElementById('voiceIndicator').textContent = 'Getting AI response...';
             showLoading();
 
             try {
                 const formData = new FormData();
-                formData.append('step', step);
+                formData.append('current_round', round);
                 formData.append('session_data', JSON.stringify(sessionData));
                 formData.append('voice', selectedVoice);
                 
@@ -1317,13 +1575,14 @@
                     }
                     
                     // Update state
-                    currentStep = data.next_step;
                     sessionData = data.session_data || sessionData;
                     
                     // Show voice controls for user input
-                    if (currentStep !== 'complete' && currentStep !== 'final') {
+                    if (!data.is_complete) {
+                        currentRound = data.next_round;
                         document.getElementById('voiceControls').style.display = 'flex';
                         document.getElementById('voiceIndicator').textContent = 'Click microphone to respond';
+                        updateProgressIndicator(data.current_round, data.total_rounds);
                     }
                     
                 } else {
@@ -1354,11 +1613,16 @@
 
         // Initialize app
         async function init() {
-            await loadPrompts();
+            await loadConfig();
         }
 
         // Load everything when page loads
-        document.addEventListener('DOMContentLoaded', init);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     </script>
 </body>
+</html> 
 </html> 
