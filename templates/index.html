@@ -659,7 +659,12 @@
         <!-- Configuration Screen -->
         <div class="app-state" id="configScreen">
             <div class="config-screen">
-                <h2 style="text-align: center; margin-bottom: 30px;">Customize Your Session</h2>
+                <h2 style="text-align: center; margin-bottom: 10px;">Customize Your Session</h2>
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <span id="modeIndicator" style="color: #6B8CA3; font-style: italic;">
+                        <!-- Will show current mode -->
+                    </span>
+                </div>
                 
                 <div class="config-section">
                     <h3>📊 Number of Conversation Rounds</h3>
@@ -739,6 +744,19 @@
                 <div class="wave-bar"></div>
                 <div class="wave-bar"></div>
             </div>
+
+            <!-- Conversation Complete - Reveal Affirmation Button -->
+            <div id="revealSection" style="display: none; text-align: center; margin: 30px 0;">
+                <div style="background: #F8FAFC; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                    <h3 style="color: #031340; margin-bottom: 10px;">🎉 I'm proud of you!</h3>
+                    <p style="color: #6B8CA3; margin-bottom: 20px;">
+                        You finally let it all out. Ready for a little love?
+                    </p>
+                    <button class="main-button" onclick="revealAffirmation()" id="revealButton">
+                        ✨ Reveal My Affirmation
+                    </button>
+                </div>
+            </div>
         
             <div style="text-align: center; margin-top: 20px;">
                 <button class="secondary-button" onclick="resetSession()">🏠 Start Over</button>
@@ -749,7 +767,7 @@
         <div class="app-state" id="finalScreen">
             <div class="affirmation-card" id="affirmationCard">
                 <div class="affirmation-quote">"</div>
-                <h3>Your Personal Affirmation</h3>
+                <h3>Fapulous of the moment</h3>
                 <div class="affirmation-text" id="affirmationText">
                     <!-- Affirmation will be populated here -->
                 </div>
@@ -813,19 +831,44 @@
         let currentAudioUrl = null;
         let currentAudio = null;
         let selectedVoice = 'alloy'; // Default TTS voice
+        let storedAffirmation = null; // Store affirmation until user reveals it
         
         // Load configuration from backend
         async function loadConfig() {
             try {
-                const response = await fetch('/api/config');
+                const mode = isVoiceMode ? 'voice' : 'text';
+                const response = await fetch(`/api/config?mode=${mode}`);
                 const data = await response.json();
                 conversationConfig = data.conversation_config;
                 moodOptions = data.mood_options;
                 sessionData.conversation_config = {...conversationConfig};
+                
+                // Store both configs for mode switching
+                window.textConfig = data.text_config;
+                window.voiceConfig = data.voice_config;
+                
                 console.log('Loaded config:', data);
             } catch (error) {
                 console.error('Error loading config:', error);
             }
+        }
+
+        // Function to switch between text and voice configurations
+        function switchMode(newMode) {
+            if (newMode === 'voice' && window.voiceConfig) {
+                conversationConfig = window.voiceConfig;
+                sessionData.conversation_config = {...window.voiceConfig};
+            } else if (newMode === 'text' && window.textConfig) {
+                conversationConfig = window.textConfig;
+                sessionData.conversation_config = {...window.textConfig};
+            }
+            
+                         // Update UI if config screen is visible
+             if (document.getElementById('configScreen').classList.contains('active')) {
+                 updateModeIndicator();
+                 createRoundsSelector();
+                 createPromptEditors();
+             }
         }
 
         // Navigation functions
@@ -861,8 +904,19 @@
 
         // Initialize configuration screen
         function initializeConfig() {
+            updateModeIndicator();
             createRoundsSelector();
             createPromptEditors();
+        }
+
+        function updateModeIndicator() {
+            const indicator = document.getElementById('modeIndicator');
+            if (indicator) {
+                const modeText = isVoiceMode ? 
+                    '🎤 Voice Mode - Optimized for speech conversation' : 
+                    '💬 Text Mode - Optimized for written conversation';
+                indicator.textContent = modeText;
+            }
         }
 
         function createRoundsSelector() {
@@ -921,6 +975,15 @@
                 `;
                 container.appendChild(roundDiv);
             }
+
+            // Affirmation prompt editor
+            const affirmationDiv = document.createElement('div');
+            affirmationDiv.className = 'prompt-editor';
+            affirmationDiv.innerHTML = `
+                <label>✨ Affirmation Generation Prompt</label>
+                <textarea id="affirmationPrompt" placeholder="Enter affirmation prompt..." style="min-height: 120px;">${sessionData.conversation_config.affirmation_prompt || ''}</textarea>
+            `;
+            container.appendChild(affirmationDiv);
         }
 
         function saveCurrentConfig() {
@@ -937,6 +1000,12 @@
                 if (promptInput) {
                     sessionData.conversation_config.round_prompts.push(promptInput.value);
                 }
+            }
+
+            // Save affirmation prompt
+            const affirmationPrompt = document.getElementById('affirmationPrompt');
+            if (affirmationPrompt) {
+                sessionData.conversation_config.affirmation_prompt = affirmationPrompt.value;
             }
         }
 
@@ -1017,6 +1086,10 @@
             document.getElementById('messageInput').style.display = 'none';
             document.getElementById('voiceControls').style.display = 'none';
             document.getElementById('voiceIndicator').textContent = '';
+            document.getElementById('revealSection').style.display = 'none';
+            
+            // Clear stored affirmation
+            storedAffirmation = null;
             
             // Clean up voice resources
             if (isVoiceMode) {
@@ -1024,6 +1097,17 @@
             }
             
             showScreen('welcomeScreen');
+        }
+
+        function revealAffirmation() {
+            if (storedAffirmation) {
+                document.getElementById('affirmationText').textContent = storedAffirmation;
+                showScreen('finalScreen');
+            } else {
+                // Fallback in case affirmation wasn't stored properly
+                document.getElementById('affirmationText').textContent = "I am worthy of self-compassion and choose to treat myself with kindness.";
+                showScreen('finalScreen');
+            }
         }
 
         function addMessage(content, isUser = false) {
@@ -1111,9 +1195,16 @@
                     sessionData = data.session_data || sessionData;
                     
                     if (data.is_complete) {
-                        // Show final screen after last round
-                        document.getElementById('affirmationText').textContent = data.ai_response;
-                        setTimeout(() => showScreen('finalScreen'), 2000);
+                        // Store affirmation and show reveal button instead of auto-showing final screen
+                        storedAffirmation = data.final_affirmation || data.ai_response;
+                        
+                        // Hide input controls and show reveal section
+                        document.getElementById('messageInput').style.display = 'none';
+                        document.getElementById('voiceControls').style.display = 'none';
+                        document.getElementById('revealSection').style.display = 'block';
+                        
+                        // Scroll to reveal section
+                        document.getElementById('revealSection').scrollIntoView({ behavior: 'smooth' });
                     } else {
                         // Update current round and show input for next round
                         currentRound = data.next_round;
@@ -1310,6 +1401,9 @@
         function toggleVoiceMode() {
             isVoiceMode = document.getElementById('voiceModeToggle').checked;
             console.log('Voice mode:', isVoiceMode ? 'enabled' : 'disabled');
+            
+            // Switch to appropriate config when toggling mode
+            switchMode(isVoiceMode ? 'voice' : 'text');
         }
 
         async function initializeVoiceMode() {
@@ -1469,8 +1563,16 @@
                     
                     // Handle next step
                     if (data.is_complete) {
-                        document.getElementById('affirmationText').textContent = data.ai_response;
-                        setTimeout(() => showScreen('finalScreen'), 2000);
+                        // Store affirmation and show reveal button instead of auto-showing final screen
+                        storedAffirmation = data.final_affirmation || data.ai_response;
+                        
+                        // Hide voice controls and show reveal section
+                        document.getElementById('voiceControls').style.display = 'none';
+                        document.getElementById('voiceIndicator').textContent = '';
+                        document.getElementById('revealSection').style.display = 'block';
+                        
+                        // Scroll to reveal section
+                        document.getElementById('revealSection').scrollIntoView({ behavior: 'smooth' });
                     } else {
                         // Update current round and show voice controls for next input
                         currentRound = data.next_round;

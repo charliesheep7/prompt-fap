@@ -27,18 +27,57 @@ def validate_api_keys():
     if not OPENAI_API_KEY:
         raise ValueError("Missing required environment variable: OPENAI_API_KEY")
 
-# Default conversation configuration
-DEFAULT_CONVERSATION_CONFIG = {
+# Default conversation configuration for TEXT mode
+DEFAULT_TEXT_CONFIG = {
     "rounds": 5,
     "system_prompt": """You are Fapulous-AI, a warm, evidence-based coach focused on men's post-orgasm recovery to help him achieve his goal: Feel less guilty after masturbation. Your tone is supportive, concise, and lightly humorous when appropriate. Cite the science in plain words once, **without academic jargon or hyperlinks**. Never moralise or shame; assume masturbation is normal.""",
     "round_prompts": [
-        "Acknowledge the user's current mood and normalize it using neuroscience. Be supportive and validating. Keep it under 30 words.",
-        "Provide a gentle technique or insight based on their mood. Be encouraging and mention progress. Keep it under 30 words.", 
-        "Offer a practical tip or coping strategy. Be warm and understanding. Keep it under 30 words.",
-        "Give reassurance and perspective on their experience. Be empathetic and hopeful. Keep it under 30 words.",
-        "End with a personalized affirmation that starts with 'I...' based on their mood and responses. Keep it under 25 words."
-    ]
+        "Acknowledge the user's current mood and normalize it using neuroscience. Be supportive and validating. Keep it under 40 words.",
+        "Provide a gentle technique or insight based on their mood. Be encouraging and mention progress. Keep it under 40 words.", 
+        "Offer a practical tip or coping strategy. Be warm and understanding. Keep it under 40 words.",
+        "Give reassurance and perspective on their experience. Be empathetic and hopeful. Keep it under 40 words.",
+        "Provide supportive guidance and encouragement. Be warm and understanding. Keep it under 40 words."
+    ],
+    "affirmation_prompt": """Based on the user's conversation history and their initial mood, create a powerful, personalized affirmation that starts with "I..." 
+
+The affirmation should:
+1. Reflect insights from their conversation
+2. Address their initial emotional state
+3. Be empowering and forward-looking
+4. Use "I" statements for self-empowerment
+5. Be 15-25 words maximum
+6. Feel personal and meaningful
+
+Generate ONLY the affirmation (starting with "I..."), nothing else."""
 }
+
+# Default conversation configuration for VOICE mode
+DEFAULT_VOICE_CONFIG = {
+    "rounds": 5,
+    "system_prompt": """You are Fapulous-AI, a warm, evidence-based voice coach focused on men's post-orgasm recovery to help him achieve his goal: Feel less guilty after masturbation. Your tone is supportive, conversational, and lightly humorous when appropriate. Speak naturally as if talking to a friend. Cite the science in plain words once, **without academic jargon**. Never moralise or shame; assume masturbation is normal.""",
+    "round_prompts": [
+        "Acknowledge the user's current mood and normalize it using neuroscience. Speak warmly and naturally. Keep it under 25 words.",
+        "Provide a gentle technique or insight based on their mood. Be encouraging and conversational. Keep it under 25 words.", 
+        "Offer a practical tip or coping strategy. Speak warmly and personally. Keep it under 25 words.",
+        "Give reassurance and perspective on their experience. Be empathetic and hopeful. Keep it under 25 words.",
+        "Provide supportive guidance and encouragement. Speak warmly and personally. Keep it under 25 words."
+    ],
+    "affirmation_prompt": """Based on the user's conversation history and their initial mood, create a powerful, personalized affirmation that starts with "I..." 
+
+The affirmation should:
+1. Reflect insights from their conversation
+2. Address their initial emotional state
+3. Be empowering and forward-looking
+4. Use "I" statements for self-empowerment
+5. Be 12-20 words maximum (shorter for voice)
+6. Feel personal and meaningful
+7. Sound natural when spoken aloud
+
+Generate ONLY the affirmation (starting with "I..."), nothing else."""
+}
+
+# Fallback for existing sessions
+DEFAULT_CONVERSATION_CONFIG = DEFAULT_TEXT_CONFIG
 
 # Mood options for user selection
 MOOD_OPTIONS = [
@@ -65,9 +104,18 @@ def index():
 @app.route('/api/config', methods=['GET'])
 def get_config():
     """Get current conversation configuration and mood options"""
+    mode = request.args.get('mode', 'text')  # 'text' or 'voice'
+    
+    if mode == 'voice':
+        config = DEFAULT_VOICE_CONFIG
+    else:
+        config = DEFAULT_TEXT_CONFIG
+    
     return jsonify({
-        "conversation_config": DEFAULT_CONVERSATION_CONFIG,
-        "mood_options": MOOD_OPTIONS
+        "conversation_config": config,
+        "mood_options": MOOD_OPTIONS,
+        "text_config": DEFAULT_TEXT_CONFIG,
+        "voice_config": DEFAULT_VOICE_CONFIG
     })
 
 @app.route('/api/config', methods=['POST'])
@@ -102,6 +150,10 @@ def update_config():
         if len(data['round_prompts']) != DEFAULT_CONVERSATION_CONFIG['rounds']:
             return jsonify({"success": False, "error": "Number of round prompts must match rounds count"}), 400
         DEFAULT_CONVERSATION_CONFIG['round_prompts'] = data['round_prompts']
+    
+    # Update affirmation prompt if provided
+    if 'affirmation_prompt' in data:
+        DEFAULT_CONVERSATION_CONFIG['affirmation_prompt'] = data['affirmation_prompt']
     
     return jsonify({"success": True, "config": DEFAULT_CONVERSATION_CONFIG})
 
@@ -210,18 +262,86 @@ def fapulous_session():
         is_complete = current_round >= total_rounds
         next_round = current_round + 1 if not is_complete else None
         
+        # If this is the final round, generate a separate affirmation
+        final_affirmation = None
+        if is_complete:
+            final_affirmation = generate_final_affirmation(session_data, mood)
+        
         response_data = {
             "ai_response": result["response"],
             "current_round": current_round,
             "next_round": next_round,
             "total_rounds": total_rounds,
             "is_complete": is_complete,
+            "final_affirmation": final_affirmation,
             "session_data": session_data
         }
         
         return jsonify(response_data)
     else:
         return jsonify({"error": result["error"]}), 500
+
+def generate_final_affirmation(session_data, mood):
+    """Generate a personalized affirmation based on the full conversation history"""
+    try:
+        conversation_history = session_data.get('conversation', [])
+        config = session_data.get('conversation_config', DEFAULT_CONVERSATION_CONFIG)
+        
+        # Get the custom affirmation prompt or use default
+        affirmation_prompt_template = config.get('affirmation_prompt', DEFAULT_CONVERSATION_CONFIG['affirmation_prompt'])
+        
+        # Build conversation summary
+        conversation_summary = "\n".join([
+            f"Round {msg['round']}: User said: '{msg['user']}', AI responded: '{msg['ai']}'" 
+            for msg in conversation_history
+        ])
+        
+        # Create the full affirmation prompt with context
+        full_affirmation_prompt = f"""You are Fapulous-AI. {affirmation_prompt_template}
+
+User's initial mood: {mood}
+
+Conversation summary:
+{conversation_summary}"""
+        
+        headers = {
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "user", "content": full_affirmation_prompt}
+            ],
+            "temperature": 0.8,
+            "max_tokens": 50
+        }
+        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            affirmation = data["choices"][0]["message"]["content"].strip()
+            
+            # Ensure it starts with "I"
+            if not affirmation.startswith("I "):
+                affirmation = "I " + affirmation.lstrip("I").strip()
+                
+            return affirmation
+        else:
+            # Fallback affirmation
+            return "I am worthy of self-compassion and choose to treat myself with kindness."
+            
+    except Exception as e:
+        print(f"Error generating affirmation: {e}")
+        # Fallback affirmation
+        return "I am worthy of self-compassion and choose to treat myself with kindness."
 
 @app.route('/api/transcribe-audio', methods=['POST'])
 def transcribe_audio():
@@ -523,6 +643,11 @@ def voice_session():
             is_complete = current_round >= total_rounds
             next_round = current_round + 1 if not is_complete else None
             
+            # If this is the final round, generate a separate affirmation
+            final_affirmation = None
+            if is_complete:
+                final_affirmation = generate_final_affirmation(session_data, mood)
+            
             return jsonify({
                 "success": True,
                 "ai_response": ai_response_text,
@@ -533,6 +658,7 @@ def voice_session():
                 "next_round": next_round,
                 "total_rounds": total_rounds,
                 "is_complete": is_complete,
+                "final_affirmation": final_affirmation,
                 "session_data": session_data
             })
         else:
